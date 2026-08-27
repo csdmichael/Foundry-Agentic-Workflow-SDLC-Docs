@@ -18,32 +18,33 @@ policies** controlling when agents advance to the next stage.
 1. [Capabilities at a glance](#capabilities-at-a-glance)
 2. [Workflow execution modes](#workflow-execution-modes)
 3. [Live deployment](#live-deployment)
-4. [Systems of Record — root URLs](#systems-of-record--root-urls)
-5. [Data storage and persistence map](#data-storage-and-persistence-map)
-6. [Architecture at a glance](#architecture-at-a-glance)
-7. [Data flow](#data-flow)
-8. [Agent Framework workflow](#agent-framework-workflow)
-9. [Model selection and routing](#model-selection-and-routing)
-10. [Agents in the workflow](#agents-in-the-workflow)
-11. [Features](#features)
-12. [Technology stack](#technology-stack)
-13. [Project setup prerequisites](#project-setup-prerequisites)
-14. [Repository layout](#repository-layout)
-15. [Quick start (local)](#quick-start-local)
-16. [Authentication & roles](#authentication--roles)
-17. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
-18. [Specialized agents](#specialized-agents)
-19. [Systems of Record configuration](#systems-of-record-configuration)
-20. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
-21. [Configuration guide](#configuration-guide)
-22. [Security & guardrails](#security--guardrails)
-23. [Testing](#testing)
-24. [Deployment (CI/CD)](#deployment-cicd)
-25. [Troubleshooting](#troubleshooting)
-26. [Future work](#future-work)
-27. [Diagrams & reference material](#diagrams--reference-material)
-28. [References](#references)
-29. [License](#license)
+4. [Source control repository](#source-control-repository)
+5. [Systems of Record — root URLs](#systems-of-record--root-urls)
+6. [Data storage and persistence map](#data-storage-and-persistence-map)
+7. [Architecture at a glance](#architecture-at-a-glance)
+8. [Data flow](#data-flow)
+9. [Agent Framework workflow](#agent-framework-workflow)
+10. [Model selection and routing](#model-selection-and-routing)
+11. [Agents in the workflow](#agents-in-the-workflow)
+12. [Features](#features)
+13. [Technology stack](#technology-stack)
+14. [Project setup prerequisites](#project-setup-prerequisites)
+15. [Repository layout](#repository-layout)
+16. [Quick start (local)](#quick-start-local)
+17. [Authentication & roles](#authentication--roles)
+18. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
+19. [Specialized agents](#specialized-agents)
+20. [Systems of Record configuration](#systems-of-record-configuration)
+21. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
+22. [Configuration guide](#configuration-guide)
+23. [Security & guardrails](#security--guardrails)
+24. [Testing](#testing)
+25. [Deployment (CI/CD)](#deployment-cicd)
+26. [Troubleshooting](#troubleshooting)
+27. [Future work](#future-work)
+28. [Diagrams & reference material](#diagrams--reference-material)
+29. [References](#references)
+30. [License](#license)
 
 > This README is the technical reference. The role-sequenced user guide covers the operator workflow
 > and live sample with ordered screenshots in [Markdown](docs/user-guide/README.md) or
@@ -191,6 +192,14 @@ Azure management (portal) links:
 | APIM gateway `ai-gateway-apim-poc-my` | [open](https://portal.azure.com/#@MngEnvMCAP829495.onmicrosoft.com/resource/subscriptions/86b37969-9445-49cf-b03f-d8866235171c/resourceGroups/ai-myaacoub/providers/Microsoft.ApiManagement/service/ai-gateway-apim-poc-my/apim-apis) |
 | Cosmos DB `cosmos-fabriciq-demo-01` | [open](https://portal.azure.com/#@MngEnvMCAP829495.onmicrosoft.com/resource/subscriptions/86b37969-9445-49cf-b03f-d8866235171c/resourceGroups/ai-myaacoub/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-fabriciq-demo-01/DataExplorerBlade) |
 | Email (ACS) `fabriciq-shortages-email-b3` | [open](https://portal.azure.com/#@MngEnvMCAP829495.onmicrosoft.com/resource/subscriptions/86b37969-9445-49cf-b03f-d8866235171c/resourceGroups/ai-myaacoub/providers/Microsoft.Communication/EmailServices/fabriciq-shortages-email-b3/resourceOverviewId) |
+
+---
+
+## Source control repository
+
+The application source code is maintained in the private GitHub repository
+[csdmichael/Foundry-Agentic-Workflow-SDLC](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC).
+Request access from **Michael Yaacoub** to view or clone the repository.
 
 ---
 

@@ -946,7 +946,10 @@ Foundry-Agentic-Workflow-SDLC/
 │     ├─ config/            # API tier config (+ APIM, integrations, guardrails)
 │     ├─ persistence/config # DB tier config
 │     └─ agents/config      # Agent orchestration tier config
-├─ .github/workflows/        # Component-scoped CI/CD (deploy only what changed)
+└─ .github/workflows/        # Component-scoped CI/CD (deploy only what changed)
+
+Foundry-Agentic-Workflow-SDLC-Docs/
+├─ README.md                 # Technical reference
 └─ docs/                     # Diagrams, samples, reference deck, and user guide
 ```
 

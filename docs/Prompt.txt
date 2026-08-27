@@ -425,3 +425,5 @@ Make sure while taking video and screenshots that screens are not trimmed and it
 
 For existing projects page, add different icon for each execution mode (autonomous vs minimal review vs human review) in project card next to project name and display same icon in project details screen. 
 In bulk zip upload and wizard, fill description (if it is blank) by picking 2-3 summarized sentences from functional reuirements and this should go to ADO main project landing page
+
+build ui screen to add a list of emails to access the projects (multi-select from existing projects). This should add the emails as members / contributors on ado projects and collaborator on github projects and make them admins in the sdlc application (they should appear under user management). Also send them an email notification with sdlc factory url and the urls of ADO projects grouped and the urls of github projects they got access to once they get added and cc myaacoub@microsoft.com on all emails.

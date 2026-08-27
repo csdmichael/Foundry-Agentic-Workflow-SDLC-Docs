@@ -1,0 +1,427 @@
+Context:
+Build an Agentic SDLC / Software Factory application based on the attached architecture diagrams and the existing local reference project:
+C:\Projects\Fabric\Fabric-IQ-Ontology-Parts-Shortages
+
+Use the authentication pattern from that repo as a reference, especially OTP and Entra ID authentication. Do not copy secrets. Reuse only safe patterns, structure, and implementation ideas.
+
+Application goal:
+Create a responsive application that orchestrates specialized Azure AI Foundry agents across the software development lifecycle. The workflow must support project intake, requirements and UX mockup ingestion, ADO backlog generation, repo and pipeline creation, design publishing, security guardrails, and explicit human approval gates before any agent action advances to the next stage.
+
+Technology stack:
+- Frontend: Angular, TypeScript, Ionic
+- Responsive UI layouts for Phone, Tablet, and Web
+- Backend API: choose a clean Node.js/TypeScript or .NET API based on the repo structure. Prefer consistency with the current project if one exists.
+- Database: use a configurable persistence layer. If no DB exists yet, implement a clean repository pattern with a local development option and Azure-ready configuration.
+- Authentication: Microsoft Entra ID plus OTP
+- Gateway: Azure API Management as the gateway in front of Foundry APIs
+- Agent orchestration: configurable Foundry agents, tools, and models
+- Integrations: Azure DevOps, GitHub, local file upload, MCP servers where applicable
+
+Important architecture rules:
+1. Keep configuration separated by tier.
+   - UI config must live under the UI tier in a config folder.
+   - API config must live under the API tier in a config folder.
+   - DB config must live under the DB or persistence tier in a config folder.
+   - Agent config must live under an agent or orchestration tier in a config folder.
+   - Do not hardcode endpoints, model deployments, API keys, tenant IDs, role mappings, document store paths, GitHub orgs, ADO orgs, or APIM routes in business logic.
+
+2. Use APIM as the gateway for Foundry APIs.
+   - All Foundry calls must go through APIM endpoints.
+   - Backend should never call Foundry directly unless a local development config explicitly allows it.
+   - Add config for APIM base URL, subscription key or managed identity mode, route names, timeout, retry policy, throttling policy name, and correlation ID header.
+   - Add logging hooks for prompt ID, agent ID, model name, token estimate, project ID, user ID, approval gate ID, and workflow run ID.
+
+3. Make every agent model configurable.
+   Add an agent configuration file that supports:
+   - agentId
+   - displayName
+   - lifecycleStage
+   - modelDeploymentName
+   - modelProvider
+   - apimRoute
+   - toolsAllowed
+   - mcpServersAllowed
+   - maxInputTokens
+   - maxOutputTokens
+   - temperature
+   - requiresHumanApproval
+   - approvalRole
+   - guardrails
+   - enabled
+
+Specialized agents to implement:
+- Requirements Agent
+  - Reads requirements and UX mockups uploaded from local disk during project creation.
+  - Summarizes requirements.
+  - Generates Epics, Features, User Stories, Tasks, acceptance criteria, and risks.
+  - Uses Azure DevOps APIs or Azure DevOps MCP server.
+
+- Architecture Advisor Agent
+  - Produces architecture recommendations, design notes, threat model placeholders, API contracts, and implementation plan.
+  - Publishes approved design artifacts to the project's GitHub docs/ folder using the configured GitHub connector/API.
+
+- Code Generation Agent
+  - Creates or updates source code repos.
+  - Uses GitHub APIs, GitHub Copilot-compatible workflows, or MCP server patterns.
+  - Opens branches and pull requests, but must not merge without human approval.
+
+- Test Automation Agent
+  - Generates unit, integration, security, and user acceptance test plans.
+  - Can create test tasks or pipeline steps.
+  - Requires QA or Admin approval before results are marked accepted.
+
+- DevOps / Release Agent
+  - Generates or updates pipelines.
+  - Provisions Azure resources using configured IaC templates.
+  - Must require human approval before provisioning or deployment.
+  - Uses managed identity where possible and never stores secrets in code.
+
+- Security and Compliance Agent
+  - Reviews generated work items, code, dependencies, and infrastructure plans.
+  - Produces findings, risk severity, and remediation tasks.
+  - Blocks promotion if required approvals or security checks are missing.
+
+- Knowledge Assistant
+  - Searches project docs, uploaded intake material, wiki/docs, prior decisions, and operational notes.
+  - Provides citations or source references where possible.
+
+Human-in-the-loop requirements:
+Implement explicit approval gates across the workflow:
+1. Plan and scope approval
+2. Architecture and design approval
+3. Backlog generation approval
+4. Code generation approval
+5. Pull request review approval
+6. Security review approval
+7. Test acceptance approval
+8. Release and deployment approval
+9. Operate and improve approval
+
+For each approval gate:
+- Store approver, role, timestamp, decision, comments, previous state, next state, and artifact references.
+- Support approve, reject, request changes, and delegate.
+- No agent can advance a workflow stage if requiresHumanApproval is true and approval is missing.
+- Show approval status clearly in the UI.
+- Add guardrails in both UI and API so bypassing the UI cannot bypass approvals.
+- Add audit logs for all approvals and agent actions.
+
+Authentication and authorization:
+Implement both Microsoft Entra ID and OTP authentication.
+
+Entra ID domain:
+@MngEnvMCAP829495.onmicrosoft.com
+
+Initial App Owners:
+- admin@MngEnvMCAP829495.onmicrosoft.com
+  - authentication method: Entra ID
+- myaacoub@MngEnvMCAP829495.onmicrosoft.com
+  - authentication method: Entra ID
+- myaacoub@microsoft.com
+  - authentication method: OTP
+
+Roles:
+- Business User
+- IT User
+- Admin
+- App Owner
+
+Authorization rules:
+- Admin can access all application functionality except user maintenance if that is reserved separately.
+- App Owner can do everything Admin can do and can also maintain users.
+- App Owner can add, edit, remove users and set each user's authentication method to OTP or Entra ID.
+- Business User can create projects, upload or connect requirements and UX mockups, review outputs, and approve business gates.
+- IT User can review technical design, repos, pipelines, Azure provisioning plans, tests, and deployment gates.
+- Enforce role authorization on API routes and UI navigation.
+- Hide unauthorized menus and also block unauthorized API calls server-side.
+
+UI requirements:
+Use Angular, TypeScript, and Ionic.
+
+Header:
+- Add Microsoft logo in the header.
+- Add this identity text in the header or footer:
+  Michael Yaacoub | Sr Solution Engineer
+- Add LinkedIn link:
+  https://www.linkedin.com/in/michael-yaacoub-7a46436/
+- Add GitHub handle/link:
+  csdmichael
+
+Responsive layouts:
+- Phone: bottom tabs or compact menu, stacked cards, simplified workflow timeline.
+- Tablet: split layout with left nav and content panel.
+- Web: full left navigation, header, dashboard cards, workflow canvas, and detail panels.
+
+Main left navigation sections:
+1. Agentic SDLC Operations
+2. Admin
+3. Documentation
+
+Agentic SDLC Operations:
+- New Project
+- Existing Projects
+- Workflow Runs
+- Human Approval Queue
+- Agent Activity
+- Audit Trail
+
+New Project flow:
+- Project name
+- Description
+- Business owner
+- IT owner
+- Upload requirements and UX mockup documents from local disk
+- Choose Azure DevOps organization and project
+- Choose or create GitHub repository
+- Select target environment:
+  - Dev
+  - Test
+  - UAT
+  - Prod
+- Select lifecycle agents to run
+- Confirm model configuration per agent
+- Submit for Plan and Scope approval before agents generate downstream changes
+
+Existing Project flow:
+- Show saved projects
+- Show current lifecycle stage
+- Show pending approvals
+- Show backlog items
+- Show generated artifacts
+- Show repo and pipeline links
+- Show agent runs and logs
+- Allow resume, rerun stage, request changes, or archive
+
+Admin section:
+- User management
+- Role management
+- Authentication method management
+- Agent configuration
+- Model configuration
+- APIM configuration
+- ADO/GitHub connector configuration
+- Guardrail policy configuration
+- Audit settings
+
+Documentation section:
+- Overview
+- Architecture
+- Human-in-the-loop model
+- Agent responsibilities
+- Configuration guide
+- Security and guardrails
+- Troubleshooting
+
+Data model:
+Create entities or interfaces for:
+- User
+- Role
+- AuthenticationMethod
+- Project
+- ProjectSource
+- WorkflowRun
+- WorkflowStage
+- AgentDefinition
+- AgentRun
+- AgentToolCall
+- ApprovalGate
+- ApprovalDecision
+- Artifact
+- AdoWorkItemMapping
+- GitHubRepoMapping
+- PipelineMapping
+- GuardrailPolicy
+- AuditLog
+- AppConfiguration
+
+Workflow states:
+- Draft
+- Submitted
+- AwaitingApproval
+- Approved
+- Rejected
+- ChangesRequested
+- Running
+- Completed
+- Failed
+- Blocked
+- Archived
+
+Implementation expectations:
+- Create clean folder structure.
+- Add strongly typed interfaces/models.
+- Add services for auth, roles, projects, agents, approvals, audit, configuration, ADO, GitHub, local document upload, and APIM/Foundry calls.
+- Add route guards in Angular.
+- Add API middleware for authentication, authorization, correlation ID, audit logging, and error handling.
+- Add mock/local implementations where real cloud credentials are not available.
+- Make all external integrations configurable and safe by default.
+- Add TODO comments only where secrets or tenant-specific values must be supplied.
+- Add sample config files with placeholder values.
+- Add README documentation with setup and run instructions.
+
+Security requirements:
+- Do not commit secrets.
+- Use environment variables or secure configuration.
+- Support managed identity for Azure resources where possible.
+- Validate all uploaded file types and sizes.
+- Add audit logging for all user actions, agent actions, and approval decisions.
+- Enforce role checks on both UI and API.
+- Require human approval before work item creation, repo creation, pipeline changes, documentation publishing, Azure resource provisioning, or deployment.
+- Add content safety and guardrail policy checks before and after agent outputs.
+- Add correlation IDs across UI, API, APIM, agent calls, and audit logs.
+
+Deliverables:
+1. Implement the application skeleton if missing.
+2. Add the Angular/Ionic responsive UI.
+3. Add authentication and role-based access control.
+4. Add project creation and existing project flows.
+5. Add agent configuration and model configuration.
+6. Add APIM gateway configuration layer for Foundry APIs.
+7. Add human approval gate framework.
+8. Add mock services for ADO, GitHub, local disk upload, Foundry/APIM, and Azure provisioning if live credentials are not available.
+9. Add admin user management for App Owner.
+10. Add documentation pages and README.
+11. Add sample configuration files.
+12. Add unit tests for authorization, approval gate enforcement, and workflow state transitions.
+
+Start by inspecting the current repo structure and the local reference project:
+C:\Projects\Fabric\Fabric-IQ-Ontology-Parts-Shortages
+
+Then propose the file changes, create the folder structure, and implement the first working vertical slice:
+- Login
+- Role-based shell
+- Responsive layout
+- App Owner users seeded from config
+- New Project wizard
+- Agent configuration view
+- Approval gate enforcement
+- Mock Foundry/APIM agent run
+- Audit log entry
+
+After the vertical slice works, continue with integrations and advanced workflow stages.
+
+Azure Resources:
+
+- Subscription: 86b37969-9445-49cf-b03f-d8866235171c
+- Resource Group: ai-myaacoub
+- APIM Url: https://portal.azure.com/#@MngEnvMCAP829495.onmicrosoft.com/resource/subscriptions/86b37969-9445-49cf-b03f-d8866235171c/resourceGroups/ai-myaacoub/providers/Microsoft.ApiManagement/service/ai-gateway-apim-poc-my/apim-apis
+- Foundry: https://002-ai-poc-private.services.ai.azure.com/api/projects/agentic-sdlc
+- Cosmos DB: https://portal.azure.com/#@MngEnvMCAP829495.onmicrosoft.com/resource/subscriptions/86b37969-9445-49cf-b03f-d8866235171c/resourceGroups/ai-myaacoub/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-fabriciq-demo-01/DataExplorerBlade
+- App Service Plan for UI and API: Create new as B2
+- Email service to send otp and emails: https://portal.azure.com/#@MngEnvMCAP829495.onmicrosoft.com/resource/subscriptions/86b37969-9445-49cf-b03f-d8866235171c/resourceGroups/ai-myaacoub/providers/Microsoft.Communication/EmailServices/fabriciq-shortages-email-b3/resourceOverviewId
+
+Add licence file MIT for Michael Yaacoub @ Microsoft
+Add documentation attached under docs and add readme with TOC including attached architecture diagram displayed in readme in early sections and dataflow diagram attached also
+build git workflows by component (ui, api, etc) to deploy to azure based on modified component only
+
+Add the following functionalities:
+
+Global settings that apply for all projects unless overwritten at project level:
+- Add System of Record for the following:
+  - Documentation: Default is the project's GitHub docs/ folder
+  - Work Items Tracking: Default is ADO Url (https://dev.azure.com/{orgName})
+  - Test Cases and test plans Tracking: Default is ADO Url (https://dev.azure.com/{orgName})
+  - Code Build / Pipelines: Default is ADO Url or pick github actions
+  - Source Code Org: Default gitHub Org (https://github.com/{orgName})
+
+  At project level, allow to overwrite global settings. Default pre-populate with global settings
+
+  For Agentic Workflow using Microsoft Agent Framework in Foundry, mention the pattern used from (C:\Projects\Foundry\Foundry-Agentic-Workflow-SDLC\docs\MultiAgent Workflow using Microsoft Agent Framework.jpg) and add this diagram in main readme, describe it as approach used and pattern chosen for SDLC life-cycle.
+
+  create api wrapper (Controller) for github (create project, create repo, create branch, all other apis needed to maintain github code), same for ADO. Everytime a user creates a new project, commit the uploaded requirements and UX mockup documents into its new GitHub repository under docs/intake: 
+  GitHub root: https://github.com/csdmichael
+  ADO Root:  https://dev.azure.com/csdmichael
+  Test and ensure that the apis can create projects in each of these systems of records and add any necessary secrets needd to do that and prompt me to login if you need to create PAT.
+  Ensure that agentic flow will call api and actually create a project in ADO and Github every time you create a new agentic sdlc project in ui.
+  Then as agentic workflow plans the work, call ado apis to generate work items in ado in reality and same for new github repos for code generation agent.
+  Test this flow end to end and commit, publish code.
+
+Also, in UI, add ability to download a requirements template and UX Mockups template and technical requirements template. 
+These 3 templates are in word format.
+Each template should have document title placeholder {Business Case}, section titles / placeholder for content. This is for functional / non-functional requirements doc, UX Mockups doc, Technical Requirements doc.
+The Technical Requirements template should have tech stack for Front End, APIs, DB, Any Frameworks like Foundry. APIM, etc. By default, make UI in Angular / Typescript / Ionic, APIs in Python, DB in SQL Server or Cosmos DB, optionally add Storage Account.
+Use docs/samples as an example for templates.
+
+Add the following Future Work in readme in a table with proposed approach column:
+1) MultiAgent per role in SDLC Workflow to optimize delivery speed, quality, cost. What is the right number of parallel agents in each role?
+2) Pick right model per agent role for cost and quality optimization. Potentially, use Foundry Model router
+3) Add Connectors for JIRA, qTest and other systems depending on SOR systems to store project assets
+4) SDLC is iterative, add ability to implement multiple phases, Change requests, Enhancements as Sub-workflows
+5) Dependencies between projects, work items cross projects
+
+Does ui call specialized foundry agents from ([Microsoft Foundry](https://ai.azure.com/nextgen/r/hrN5aZRFSc-wP9iGYjUXHA,ai-myaacoub,,002-ai-poc-private,agentic-sdlc/build/agents?tid=b158173c-91f6-4f99-b5e9-aa9bcb463863))?
+IF not, make it follow proper sdlc flow and leverage foundry agents.
+Also, the ui has 6 run agent buttons while foundry has 12 prompt agents.
+Improve UI to do full sdlc. Also, there is no agent in ui that creates ado work items hierarchy, fix this issue and make me as human review and approve with multi-select approval and ability to edit before work items get generated in ado.
+Same thing to approve design/architecture and code structure before publish.
+Enforce human in loop and make visual progress with icons for 12 agents and where workflow stands and show human action versus agent.
+Update readme accordingly and test workflow end to end
+
+Add a new functionality to delete an existing project with ability to select if you want to delte related records in SOR Systems (ADO, GitHub). By default check the cascade delete for all sors. 
+Also, after one of sdlc workflow agents deploy a project to azure, create one or more wiki pages in ado for that project that has Name, description of project, hosted UI, Swagger apis and any relevant information about the project.
+When human in loop clicks a checkbox for a work item, it automatically select its parents, do not do that. Also, when i click delete, the page moves all the way up automatically. Implement smart navigation or something to keep focus of page the same without moving away from work items tree.
+Update readme. No need to regenerate US=ser Guide post the delete project functionality.
+Also, create a section in readme toc (about 1 pager) that has bulleted list of features of this Agentic SDLC Workflow project by importance. Mention how human in loop can multi-select work items and approve / update / remove before work items get created in ADO, reviewing design, requirements, etc. This should be brief to copy and paste in MS teams or email and be a quick read to understand capabilities of this application.
+
+in project details page, collapse the following sections by default with ability to expand and show count of items collapsed: Systems of Record, Generated Assets, Agent Runs & Artifacts, GitHub.
+
+For each agent run button, no need for user to click run agent, each agent should automatically run once human review approves generated output as they do currently. In beginning of each project creation, ask if you need fully autonomous (no human approval) or need human review on each stage or minimal human intervation (when necessary only). 
+Also allow after workflow is complete to update at any stage (Requirements, Architecture, Planning / Work Items) and re-run the flow autonomously to continue till end
+Test the whole workflow and commit / publish code at end.
+----------------
+On project deletion, add checkbox for deletion of deployed Azure Resources and delete them if selected
+When you delete a project, move it to deleted projects table or container but keep its configuration saved in backend database for tracking purposes.
+In UI, add Deleted projects page to show deleted projects and the names & uris of deployed Azure Resources, Github Repo, ADO Project
+
+When the code generation agent, generates code in pull request, turn related work items (Tasks, user stories, features, epic) in ado to active and link them to code commit / pull request and put relevant comments in discussion
+When code gets published successfully, complete assosciated work items in ado (Tasks, user stories, features, epic) and put relevant comments in discussion
+For test plans and test cases, update them as the test agent runs test plans. Implement test automation pipelines and link them to test cases
+
+For 12 Foundry agents, prefix their names in Foundry portal ui in order of execution in this format: 010-{Agent Name} up to 120-{Agent Name}. Make prefix multiple of 10 to easily add more agents in future without affecting existing agents numbering. This way, they will display in order of execution in foundry ui.
+
+For all UI screens, build separate layout that looks best based on platform / device (Web vs Mobile vs iPad).
+--------------------
+Add functionality to create new set of multiple projects that run parallel sdlc workflows.
+Build a wizard that takes mandatory Functional Requirement doc & optional UX Mockups doc and Technical Requirements doc for each project in set of projects. 
+For each project, you need to pick from autonomous vs human review vs minimal human review. By default, it is autonomous for all projects
+For Model Selection and configs, allow user to set them once across all projects with a button on each project level to override the settings for set of projects
+Also, allow a quicker way to create new set of multiple projects by uploading a zip file that has a folder for each project that has its documents.
+Once you submit and confirm set of projects, go to screen of existing projects and group projects by status on where they are at in workflow, display Progress indicator / KPI  next to each project and allow drill through to see specific project details.
+--------------------
+Create a separate readme file under docs and refer it in main readme in separate section. This new readme will have Project Setup Pre-requisities:
+- Architecture diagram for components for this application including EntraID for Agents, Foundry, APIM, ADO APIs / MCP, GitHub APIs / MCP, Cosmos DB, etc.
+- Technologies and Azure Services needed
+- Steps to build environment to host this agentic sdlc factory Application
+
+Also, rebuild users guide md and pdf based on updated ui
+
+Add a trace control that show last message with ability to expand and see full trace per project in existing projects screen. 
+This trace show show at which stage is project at and what got generated recently. 
+E.g: 
+  GitHub repo created
+  ADO Project Created
+  Work Items generated in New State
+  Code generated in GitHub
+  ADO work items switched to Active instead of new
+  Pull request created in github
+  Pull requested merged in github
+  Pipeline / GitHub Workflow code Generated
+  GitHub Action Workflow / Pipeline ran and succeeded or failed
+  Web App published
+  API published
+  Wiki page generated in ADO
+  Work items closed in ADO
+  Workflow Complete
+
+Send an email notification to business and technical owner (one email if both are same person) when a project is:
+  awaiting approval
+  fails
+  completes
+  new project get created
+
+Record a video while taking screenshots for users guide for whole sequence starting with Admin and 4 projects zip workflowend to end and then delete couple projects. 
+Also, record video for other screens like Documentation, 12 foundry agents (in foundry portal) and Entra IDs for 12 agents in Entra ID - Agents screen.
+During video, expand trace for each of projects as they move in workflow and also go to ado and github after each stage to show the assets that got generated and status changes of work items.
+Make sure while taking video and screenshots that screens are not trimmed and it takes full screen with no empty space.
+
+For existing projects page, add different icon for each execution mode (autonomous vs minimal review vs human review) in project card next to project name and display same icon in project details screen. 
+In bulk zip upload and wizard, fill description (if it is blank) by picking 2-3 summarized sentences from functional reuirements and this should go to ADO main project landing page

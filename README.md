@@ -9,19 +9,17 @@ policies** controlling when agents advance to the next stage.
 > [LinkedIn](https://www.linkedin.com/in/michael-yaacoub-7a46436/) ·
 > [github.com/csdmichael/Foundry-Agentic-Workflow-SDLC](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC)
 
-> **User guide:** Follow the complete 12-agent workflow with the live Retail Store Task Execution sample in [Markdown](docs/user-guide/README.md) or [PDF](docs/user-guide/Agentic-SDLC-User-Guide.pdf).
-
 ---
 
 ## Table of contents
 
-1. [Capabilities at a glance](#capabilities-at-a-glance)
-2. [Workflow execution modes](#workflow-execution-modes)
-3. [Live deployment](#live-deployment)
-4. [Source control repository](#source-control-repository)
-5. [Systems of Record — root URLs](#systems-of-record--root-urls)
-6. [Data storage and persistence map](#data-storage-and-persistence-map)
-7. [Architecture at a glance](#architecture-at-a-glance)
+1. [Architecture at a glance](#architecture-at-a-glance)
+2. [Capabilities at a glance](#capabilities-at-a-glance)
+3. [Workflow execution modes](#workflow-execution-modes)
+4. [Live deployment](#live-deployment)
+5. [Source control repository](#source-control-repository)
+6. [Systems of Record — root URLs](#systems-of-record--root-urls)
+7. [Data storage and persistence map](#data-storage-and-persistence-map)
 8. [Data flow](#data-flow)
 9. [Agent Framework workflow](#agent-framework-workflow)
 10. [Model selection and routing](#model-selection-and-routing)
@@ -46,9 +44,115 @@ policies** controlling when agents advance to the next stage.
 29. [References](#references)
 30. [License](#license)
 
-> This README is the technical reference. The role-sequenced user guide covers the operator workflow
-> and live sample with ordered screenshots in [Markdown](docs/user-guide/README.md) or
-> [PDF](docs/user-guide/Agentic-SDLC-User-Guide.pdf).
+---
+
+## Architecture at a glance
+
+![Agentic SDLC reference architecture using Microsoft Agent Framework and Microsoft Foundry](docs/HL_Architecture.png)
+
+Agents are **built, run, and governed in Microsoft Foundry**, orchestrated with
+**Microsoft Agent Framework**, and they reach the outside world only by calling
+**Systems of Record through MCP servers and APIs**. Reading the diagram
+top-to-bottom:
+
+**1 · People (top band).** Six personas hold accountability across the lifecycle —
+Business Stakeholders, Product Owners/Managers, Developers, QA/Testers,
+DevOps/Platform Engineers, and Operations. Every persona maps to a role in the
+app ([Authentication & roles](#authentication--roles)) and to the approver of
+one or more gates.
+
+**2 · Microsoft Agent Framework in Foundry (runtime band).** The framework
+supplies built-in orchestration patterns, context & state management, guardrails
+& safety, tools & connectors, and observability & logging. This is why the app
+does not hand-roll an orchestrator — see
+[Agent Framework workflow](#agent-framework-workflow) for the pattern chosen.
+
+**3 · Foundry agents for SDLC (center).** Twelve ordered Prompt Agents share the
+same deterministic graph while retaining independent run records, model policy,
+evidence, and checkpoints:
+
+| Order | Phase | Agent | Produces |
+| --- | --- | --- | --- |
+| 010 | Plan | Requirements Agent | Scope, actors, functional and non-functional requirements, constraints, and risks |
+| 020 | Plan | Planning Agent | Epics, Features, User Stories, Tasks, estimates, priorities, and acceptance criteria |
+| 030 | Design | Architecture Advisor Agent | Architecture, data model, API contracts, implementation plan, and threat-model inputs |
+| 040 | Build | Code Generation Agent | Application code, database assets, tests, CI/CD, branch, and pull request |
+| 050 | Test | Test Planning Agent | Test strategy, suites, cases, traceability, and acceptance coverage |
+| 060 | Test | Testing Agent | Execution assessment, defects, quality evidence, and release-readiness findings |
+| 070 | Test | Test Automation Agent | Automated tests, pipeline integration, ADO Test Runs, and result evidence |
+| 080 | Security | Security and Compliance Agent | Findings, severity, mitigations, residual risk, and promotion recommendation |
+| 090 | Deploy | DevOps / Release Agent | Azure hosting, OIDC, merge/deploy evidence, smoke validation, and release record |
+| 100 | Operate | Ops Monitoring Agent | Service indicators, alerts, dashboards, incident triage, and runbooks |
+| 110 | Operate | Knowledge Assistant | Cited project, support, onboarding, and operational knowledge brief |
+| 120 | Improve | Insights Agent | Metrics, thresholds, risks, trends, and prioritized improvement backlog |
+
+A **Shared Context & State** bus runs underneath all twelve so an agent inherits
+what earlier phases produced instead of re-deriving it. In this implementation
+the lifecycle includes an explicit `security` stage before deployment, and the
+agents are fronted by **nine approval gates**. An agent advances only
+after each prerequisite is explicitly approved by a reviewer or by the selected
+automation policy ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
+
+**4 · Agents call Systems of Record via MCP servers & APIs (bottom).** Agents
+never own data. Each integration is a governed connector: Azure DevOps (work
+items; test cases & plans), Azure DevOps / GitHub Actions (pipelines &
+automations), GitHub (source control and documentation), GitHub Copilot
+(coding assistant), Microsoft Azure (App Services, Functions, Containers,
+Key Vault, Monitor), and Azure Communication Services Email (owner lifecycle
+notifications).
+
+**5 · Global settings ▸ Project settings (right rail).** The five Systems of
+Record are configured once globally and **pre-populated, overridable per
+project** — implemented exactly as shown in [Systems of Record configuration](#systems-of-record-configuration).
+
+**6 · Governance & security (right rail, bottom).** RBAC & least privilege, data
+policies & compliance, audit logging & observability, security scanning &
+guardrails, and cost controls. These are cross-cutting, enforced server-side, and
+cannot be bypassed from the UI ([Security & guardrails](#security--guardrails)).
+
+The outcome band across the bottom — consistency & reuse, end-to-end
+traceability, faster delivery, quality & reliability, visibility & insights, and
+secure & governed operation — is what the approval-gated design is optimizing for.
+
+This consolidated view implements the **AI Foundry-Based Software Factory**
+reference architecture and the **Agentic SDLC: Human Accountability + Agent
+Execution** operating model. The source reference deck remains available at
+[`docs/Microsoft-AI-Stack-for-SDLC.pdf`](docs/Microsoft-AI-Stack-for-SDLC.pdf).
+
+### Tiered configuration
+
+Configuration is strictly separated by tier; business logic never hardcodes
+endpoints, keys, tenant IDs, or routes.
+
+| Tier | Config location |
+| --- | --- |
+| UI | [`src/app/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/src/app/config) |
+| API | [`api/src/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/api/src/config) |
+| DB / persistence | [`api/src/persistence/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/api/src/persistence/config) |
+| Agent orchestration | [`api/src/agents/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/api/src/agents/config) |
+
+### APIM gateway
+
+All Azure AI Foundry calls route through Azure API Management. The backend never
+calls Foundry directly except when `FOUNDRY_ALLOW_DIRECT=1` is set for local
+development. Every call logs prompt ID, agent ID, model name, token estimate,
+project ID, user ID, approval gate ID, workflow run ID, and correlation ID.
+
+### Microsoft Agent Framework execution model
+
+The API uses `agent-framework-core` to build one stable sequential graph with
+all **12 named Foundry-agent executors**. The configured `executionOrder` is the
+single source of truth for graph order. Each node checks its prerequisite gate,
+invokes its named Foundry Prompt Agent through APIM when eligible, persists the
+proposal, and passes control to the next node. A typed `RequestInfo` event pauses
+the graph when a required human checkpoint is unresolved. File checkpoint
+storage preserves pending requests and executor state under the configured
+persistence root.
+
+Agent identities are stable configuration-derived IDs so a checkpoint can be
+rehydrated with the same 12-node topology. A policy coordinator can approve a
+non-human gate only after its artifact and tool-evidence requirements pass; ADO,
+GitHub, test, and Azure side effects still occur only during gate publication.
 
 ---
 
@@ -350,114 +454,6 @@ truth. Local development continues to use [`FileRepository`](https://github.com/
 unless `PERSIST_PROVIDER=cosmos` is selected explicitly.
 
 ---
-
-## Architecture at a glance
-
-![Agentic SDLC reference architecture using Microsoft Agent Framework and Microsoft Foundry](docs/HL_Architecture.png)
-
-Agents are **built, run, and governed in Microsoft Foundry**, orchestrated with
-**Microsoft Agent Framework**, and they reach the outside world only by calling
-**Systems of Record through MCP servers and APIs**. Reading the diagram
-top-to-bottom:
-
-**1 · People (top band).** Six personas hold accountability across the lifecycle —
-Business Stakeholders, Product Owners/Managers, Developers, QA/Testers,
-DevOps/Platform Engineers, and Operations. Every persona maps to a role in the
-app ([Authentication & roles](#authentication--roles)) and to the approver of
-one or more gates.
-
-**2 · Microsoft Agent Framework in Foundry (runtime band).** The framework
-supplies built-in orchestration patterns, context & state management, guardrails
-& safety, tools & connectors, and observability & logging. This is why the app
-does not hand-roll an orchestrator — see
-[Agent Framework workflow](#agent-framework-workflow) for the pattern chosen.
-
-**3 · Foundry agents for SDLC (center).** Twelve ordered Prompt Agents share the
-same deterministic graph while retaining independent run records, model policy,
-evidence, and checkpoints:
-
-| Order | Phase | Agent | Produces |
-| --- | --- | --- | --- |
-| 010 | Plan | Requirements Agent | Scope, actors, functional and non-functional requirements, constraints, and risks |
-| 020 | Plan | Planning Agent | Epics, Features, User Stories, Tasks, estimates, priorities, and acceptance criteria |
-| 030 | Design | Architecture Advisor Agent | Architecture, data model, API contracts, implementation plan, and threat-model inputs |
-| 040 | Build | Code Generation Agent | Application code, database assets, tests, CI/CD, branch, and pull request |
-| 050 | Test | Test Planning Agent | Test strategy, suites, cases, traceability, and acceptance coverage |
-| 060 | Test | Testing Agent | Execution assessment, defects, quality evidence, and release-readiness findings |
-| 070 | Test | Test Automation Agent | Automated tests, pipeline integration, ADO Test Runs, and result evidence |
-| 080 | Security | Security and Compliance Agent | Findings, severity, mitigations, residual risk, and promotion recommendation |
-| 090 | Deploy | DevOps / Release Agent | Azure hosting, OIDC, merge/deploy evidence, smoke validation, and release record |
-| 100 | Operate | Ops Monitoring Agent | Service indicators, alerts, dashboards, incident triage, and runbooks |
-| 110 | Operate | Knowledge Assistant | Cited project, support, onboarding, and operational knowledge brief |
-| 120 | Improve | Insights Agent | Metrics, thresholds, risks, trends, and prioritized improvement backlog |
-
-A **Shared Context & State** bus runs underneath all twelve so an agent inherits
-what earlier phases produced instead of re-deriving it. In this implementation
-the lifecycle includes an explicit `security` stage before deployment, and the
-agents are fronted by **nine approval gates**. An agent advances only
-after each prerequisite is explicitly approved by a reviewer or by the selected
-automation policy ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
-
-**4 · Agents call Systems of Record via MCP servers & APIs (bottom).** Agents
-never own data. Each integration is a governed connector: Azure DevOps (work
-items; test cases & plans), Azure DevOps / GitHub Actions (pipelines &
-automations), GitHub (source control and documentation), GitHub Copilot
-(coding assistant), Microsoft Azure (App Services, Functions, Containers,
-Key Vault, Monitor), and Azure Communication Services Email (owner lifecycle
-notifications).
-
-**5 · Global settings ▸ Project settings (right rail).** The five Systems of
-Record are configured once globally and **pre-populated, overridable per
-project** — implemented exactly as shown in [Systems of Record configuration](#systems-of-record-configuration).
-
-**6 · Governance & security (right rail, bottom).** RBAC & least privilege, data
-policies & compliance, audit logging & observability, security scanning &
-guardrails, and cost controls. These are cross-cutting, enforced server-side, and
-cannot be bypassed from the UI ([Security & guardrails](#security--guardrails)).
-
-The outcome band across the bottom — consistency & reuse, end-to-end
-traceability, faster delivery, quality & reliability, visibility & insights, and
-secure & governed operation — is what the approval-gated design is optimizing for.
-
-This consolidated view implements the **AI Foundry-Based Software Factory**
-reference architecture and the **Agentic SDLC: Human Accountability + Agent
-Execution** operating model. The source reference deck remains available at
-[`docs/Microsoft-AI-Stack-for-SDLC.pdf`](docs/Microsoft-AI-Stack-for-SDLC.pdf).
-
-### Tiered configuration
-
-Configuration is strictly separated by tier; business logic never hardcodes
-endpoints, keys, tenant IDs, or routes.
-
-| Tier | Config location |
-| --- | --- |
-| UI | [`src/app/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/src/app/config) |
-| API | [`api/src/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/api/src/config) |
-| DB / persistence | [`api/src/persistence/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/api/src/persistence/config) |
-| Agent orchestration | [`api/src/agents/config/`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/tree/main/api/src/agents/config) |
-
-### APIM gateway
-
-All Azure AI Foundry calls route through Azure API Management. The backend never
-calls Foundry directly except when `FOUNDRY_ALLOW_DIRECT=1` is set for local
-development. Every call logs prompt ID, agent ID, model name, token estimate,
-project ID, user ID, approval gate ID, workflow run ID, and correlation ID.
-
-### Microsoft Agent Framework execution model
-
-The API uses `agent-framework-core` to build one stable sequential graph with
-all **12 named Foundry-agent executors**. The configured `executionOrder` is the
-single source of truth for graph order. Each node checks its prerequisite gate,
-invokes its named Foundry Prompt Agent through APIM when eligible, persists the
-proposal, and passes control to the next node. A typed `RequestInfo` event pauses
-the graph when a required human checkpoint is unresolved. File checkpoint
-storage preserves pending requests and executor state under the configured
-persistence root.
-
-Agent identities are stable configuration-derived IDs so a checkpoint can be
-rehydrated with the same 12-node topology. A policy coordinator can approve a
-non-human gate only after its artifact and tool-evidence requirements pass; ADO,
-GitHub, test, and Azure side effects still occur only during gate publication.
 
 ## Data flow
 
@@ -983,7 +979,7 @@ Foundry-Agentic-Workflow-SDLC/
 
 Foundry-Agentic-Workflow-SDLC-Docs/
 ├─ README.md                 # Technical reference
-└─ docs/                     # Diagrams, samples, reference deck, and user guide
+└─ docs/                     # Diagrams, samples, setup guide, and reference deck
 ```
 
 ## Quick start (local)
@@ -1517,27 +1513,47 @@ workflow topology or the APIM model-execution boundary.
 
 ## Diagrams & reference material
 
-`docs/` contains architecture assets, the reference deck, and the role-sequenced
-user guide. The consolidated technical reference remains in this README.
+The primary architecture and workflow diagrams are displayed in their relevant
+sections above. This index links directly to those visual assets and supporting
+reference material.
 
 | Asset | Link |
 | --- | --- |
-| Role-sequenced user guide (Markdown) | [docs/user-guide/README.md](docs/user-guide/README.md) |
-| Role-sequenced user guide (PDF) | [docs/user-guide/Agentic-SDLC-User-Guide.pdf](docs/user-guide/Agentic-SDLC-User-Guide.pdf) |
-| Project setup prerequisites | [docs/PROJECT-SETUP-PREREQUISITES.md](docs/PROJECT-SETUP-PREREQUISITES.md) |
 | Consolidated high-level and reference architecture | [docs/HL_Architecture.png](docs/HL_Architecture.png) |
 | Fully autonomous SDLC workflow | [docs/Autonomous-SDLC-Workflow.png](docs/Autonomous-SDLC-Workflow.png) |
 | Human Review SDLC workflow | [docs/HumanReview-SDLC-Workflow.png](docs/HumanReview-SDLC-Workflow.png) |
 | Agent Framework orchestration patterns | [docs/MultiAgent Workflow using Microsoft Agent Framework.jpg](docs/MultiAgent%20Workflow%20using%20Microsoft%20Agent%20Framework.jpg) |
 | Per-agent input/output diagrams | [docs/Agents/](docs/Agents) |
+| Project setup prerequisites | [docs/PROJECT-SETUP-PREREQUISITES.md](docs/PROJECT-SETUP-PREREQUISITES.md) |
 | Full reference deck (PDF) | [docs/Microsoft-AI-Stack-for-SDLC.pdf](docs/Microsoft-AI-Stack-for-SDLC.pdf) |
 
 ## References
 
-- [Agents in Workflows | Microsoft Learn](https://learn.microsoft.com/en-us/agent-framework/workflows/agents-in-workflows?pivots=programming-language-csharp)
-- [Model Router for Microsoft Foundry | Microsoft Learn](https://learn.microsoft.com/azure/foundry/openai/concepts/model-router)
-- [Use Model Router with Foundry agents | Microsoft Learn](https://learn.microsoft.com/azure/foundry/openai/how-to/model-router-agents)
-- [Microsoft Multi-Agent Custom Automation Engine Solution Accelerator](https://github.com/microsoft/Multi-Agent-Custom-Automation-Engine-Solution-Accelerator)
+### Microsoft Learn
+
+- [Agents in Microsoft Foundry](https://learn.microsoft.com/azure/foundry/agents/overview)
+- [Microsoft Agent Framework overview](https://learn.microsoft.com/agent-framework/overview/agent-framework-overview)
+- [Agents in Agent Framework workflows](https://learn.microsoft.com/agent-framework/workflows/agents-in-workflows)
+- [Sequential orchestration](https://learn.microsoft.com/agent-framework/workflows/orchestrations/sequential)
+- [Human-in-the-loop workflows](https://learn.microsoft.com/agent-framework/workflows/human-in-the-loop)
+- [Workflow checkpoints](https://learn.microsoft.com/agent-framework/workflows/checkpoints)
+- [AI gateway in Azure API Management](https://learn.microsoft.com/azure/api-management/genai-gateway-capabilities)
+- [MCP servers in Azure API Management](https://learn.microsoft.com/azure/api-management/mcp-server-overview)
+- [Model Router for Microsoft Foundry](https://learn.microsoft.com/azure/foundry/openai/concepts/model-router)
+- [Use Model Router with Foundry agents](https://learn.microsoft.com/azure/foundry/openai/how-to/model-router-agents)
+- [Agent identity concepts in Microsoft Foundry](https://learn.microsoft.com/azure/foundry/agents/concepts/agent-identity)
+- [Set up tracing in Microsoft Foundry](https://learn.microsoft.com/azure/foundry/observability/how-to/trace-agent-setup)
+- [Azure DevOps Remote MCP Server](https://learn.microsoft.com/azure/devops/mcp-server/remote-mcp-server?view=azure-devops)
+- [Connect to Azure Cosmos DB for NoSQL using RBAC and Microsoft Entra ID](https://learn.microsoft.com/azure/cosmos-db/how-to-connect-role-based-access-control)
+- [Deploy to Azure App Service by using GitHub Actions](https://learn.microsoft.com/azure/app-service/deploy-github-actions)
+
+### GitHub repositories
+
+- [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) — framework source and Python/.NET workflow samples.
+- [AI Gateway Labs](https://github.com/Azure-Samples/AI-Gateway) — APIM policies, infrastructure, and labs for governing models, tools, and agents.
+- [Azure DevOps MCP Server](https://github.com/microsoft/azure-devops-mcp) — Azure DevOps context and operations for agents through MCP.
+- [GitHub MCP Server](https://github.com/github/github-mcp-server) — GitHub's official MCP server for repositories, pull requests, Actions, and security tooling.
+- [Multi-Agent Custom Automation Engine Solution Accelerator](https://github.com/microsoft/Multi-Agent-Custom-Automation-Engine-Solution-Accelerator) — Microsoft reference implementation for governed multi-agent automation.
 
 ## License
 

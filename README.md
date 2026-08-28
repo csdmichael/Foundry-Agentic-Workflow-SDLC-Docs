@@ -110,6 +110,30 @@ requests changes, rejects, or delegates the proposal.
 | Failure handling | Transient Foundry/external waits enter the durable retry queue; deterministic failures stop with trace evidence | Same durable automation between checkpoints; failures stop for operator action | Same durable automation after each approval; failures stop for operator action |
 | UI status | Queued, Running, Failed, or Completed; no stale Awaiting Approval status | Running between checkpoints, Awaiting Approval only at the four human gates | Awaiting Approval at every gate; Running after each decision |
 
+### Autonomous versus Human Review workflows
+
+Both workflows use the same 12-agent lifecycle, nine evidence-aware gates, and
+continuous improvement loop. The difference is how each gate advances:
+
+- In **Fully autonomous** mode, the workflow validates the required evidence,
+  records the gate decision automatically, and starts the next eligible agent.
+  It has no human checkpoints, but it retains every guardrail, permission check,
+  artifact, and audit event.
+
+![Fully autonomous Agentic SDLC workflow with automatic decisions at all nine gates](docs/Autonomous-SDLC-Workflow.png)
+
+- In **Human Review** mode, the workflow pauses at every gate so an authorized
+  reviewer can inspect evidence, edit the proposal, select artifacts, and then
+  approve and publish, request changes, reject, or delegate. Approval resumes
+  the same workflow at the next eligible agent; a change request returns to the
+  owning agent with the reviewer's comments.
+
+![Human Review Agentic SDLC workflow with reviewer decisions at all nine gates](docs/HumanReview-SDLC-Workflow.png)
+
+**Minimal Human Review** combines these two paths: Backlog Generation,
+Architecture and Design, Pull Request Review, and Release and Deployment use
+the human-review behavior, while the other five gates advance automatically.
+
 ### Gate-by-gate comparison
 
 | Approval gate | Autonomous | Minimal Human Review | Human Review |
@@ -1502,6 +1526,8 @@ user guide. The consolidated technical reference remains in this README.
 | Role-sequenced user guide (PDF) | [docs/user-guide/Agentic-SDLC-User-Guide.pdf](docs/user-guide/Agentic-SDLC-User-Guide.pdf) |
 | Project setup prerequisites | [docs/PROJECT-SETUP-PREREQUISITES.md](docs/PROJECT-SETUP-PREREQUISITES.md) |
 | Consolidated high-level and reference architecture | [docs/HL_Architecture.png](docs/HL_Architecture.png) |
+| Fully autonomous SDLC workflow | [docs/Autonomous-SDLC-Workflow.png](docs/Autonomous-SDLC-Workflow.png) |
+| Human Review SDLC workflow | [docs/HumanReview-SDLC-Workflow.png](docs/HumanReview-SDLC-Workflow.png) |
 | Agent Framework orchestration patterns | [docs/MultiAgent Workflow using Microsoft Agent Framework.jpg](docs/MultiAgent%20Workflow%20using%20Microsoft%20Agent%20Framework.jpg) |
 | Per-agent input/output diagrams | [docs/Agents/](docs/Agents) |
 | Full reference deck (PDF) | [docs/Microsoft-AI-Stack-for-SDLC.pdf](docs/Microsoft-AI-Stack-for-SDLC.pdf) |

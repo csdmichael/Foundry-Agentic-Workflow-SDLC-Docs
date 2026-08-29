@@ -242,15 +242,15 @@ requests changes, rejects, or delegates the proposal.
 | Intended use | Repeatable delivery for trusted patterns, demos, and high-volume project sets | Default enterprise balance: human control at consequential decisions without reviewing routine evidence | Maximum governance for regulated, high-risk, unfamiliar, or first-of-kind workloads |
 | Human checkpoints | None | Preflight estimate + 4 consequential checkpoints | All 10 checkpoints |
 | Agent execution | Starts automatically when prerequisites are satisfied | Starts automatically until the next selected human checkpoint | Starts automatically after each human-approved checkpoint |
-| Gate decisions | The workflow policy validates evidence and records an automated approval | The policy auto-approves routine gates; people approve the four gates listed below | A person reviews and decides every gate |
+| Gate decisions | The workflow policy validates evidence and records an automated approval | The policy auto-approves routine gates; people approve the preflight estimate and four consequential gates listed below | A person reviews and decides every gate |
 | Editing proposals | Outputs are validated and published automatically | Reviewers can edit/select backlog and architecture proposals at the selected checkpoints | Reviewers can edit/select every gated proposal before publication |
 | External side effects | Run automatically after evidence validation | Routine side effects run automatically; consequential publication waits for a reviewer | Every gated publication waits for a reviewer |
 | Failure handling | Transient Foundry/external waits enter the durable retry queue; deterministic failures stop with trace evidence | Same durable automation between checkpoints; failures stop for operator action | Same durable automation after each approval; failures stop for operator action |
-| UI status | Queued, Running, Failed, or Completed; no stale Awaiting Approval status | Running between checkpoints, Awaiting Approval only at the four human gates | Awaiting Approval at every gate; Running after each decision |
+| UI status | Queued, Running, Failed, or Completed; no stale Awaiting Approval status | Running between checkpoints, Awaiting Approval only at the five human gates | Awaiting Approval at every gate; Running after each decision |
 
 ### Autonomous versus Human Review workflows
 
-Both workflows use the same 14-agent lifecycle, nine evidence-aware gates, and
+Both workflows use the same 14-agent lifecycle, ten evidence-aware gates, and
 continuous improvement loop. The difference is how each gate advances:
 
 - In **Fully autonomous** mode, the workflow validates the required evidence,
@@ -258,7 +258,7 @@ continuous improvement loop. The difference is how each gate advances:
   It has no human checkpoints, but it retains every guardrail, permission check,
   artifact, and audit event.
 
-![Fully autonomous Agentic SDLC workflow with automatic decisions at all nine gates](docs/Autonomous-SDLC-Workflow.png)
+![Fully autonomous Agentic SDLC workflow with automatic decisions at all ten gates](docs/Autonomous-SDLC-Workflow.png)
 
 - In **Human Review** mode, the workflow pauses at every gate so an authorized
   reviewer can inspect evidence, edit the proposal, select artifacts, and then
@@ -266,7 +266,7 @@ continuous improvement loop. The difference is how each gate advances:
   the same workflow at the next eligible agent; a change request returns to the
   owning agent with the reviewer's comments.
 
-![Human Review Agentic SDLC workflow with reviewer decisions at all nine gates](docs/HumanReview-SDLC-Workflow.png)
+![Human Review Agentic SDLC workflow with reviewer decisions at all ten gates](docs/HumanReview-SDLC-Workflow.png)
 
 **Minimal Human Review** combines these two paths: Cost and Time Estimate, Backlog Generation,
 Architecture and Design, Pull Request Review, and Release and Deployment use
@@ -1041,7 +1041,7 @@ can use the complete governed delivery record.
   submission and every approval, with no per-agent Run buttons.
 - **Completed-project revisions** from Requirements, Planning/Work Items, or
   Architecture, preserving the baseline and carrying forward valid approvals.
-- **Nine approval gates** with approve / reject / request-changes / delegate.
+- **Ten approval gates** with approve / reject / request-changes / delegate.
 - **14-agent visual workflow** with named Foundry identity, status, prerequisite,
   human checkpoint, and last-run evidence for every agent.
 - **Human review workspace** with editable proposal content, multi-select
@@ -1159,9 +1159,9 @@ Seeded App Owners:
 
 ## Human-in-the-loop approval gates
 
-Plan & Scope · Architecture & Design · Backlog Generation · Code Generation ·
-Pull Request · Security Review · Test Acceptance · Release & Deployment ·
-Operate & Improve.
+Cost & Time Estimate · Plan & Scope · Backlog Generation · Architecture & Design ·
+Code Generation · Pull Request · Test Acceptance · Security Review ·
+Release & Deployment · Operate & Improve.
 
 No agent advances when its `runAfterGateName` prerequisite is missing. Agent
 output is persisted as `AwaitingApproval`; integrations do not run at generation
@@ -1171,9 +1171,10 @@ cannot bypass either the prerequisite gate or output review.
 
 Project intake selects one policy:
 
-- **Human review at every stage** pauses at all nine gates.
-- **Minimal human intervention** pauses at Backlog, Architecture, Pull Request,
-  and Release; evidence-based quality and security gates approve automatically.
+- **Human review at every stage** pauses at all ten gates.
+- **Minimal human intervention** pauses at the Cost & Time Estimate, Backlog,
+  Architecture, Pull Request, and Release gates; evidence-based routine,
+  quality, and security gates approve automatically.
 - **Fully autonomous** validates and records every gate automatically, including
   required artifact and tool evidence, and continues to completion.
 

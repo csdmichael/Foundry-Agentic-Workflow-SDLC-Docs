@@ -435,3 +435,5 @@ Update Readme documentation accordingly and UI screens for Documentation but lea
 Also, in ui screens for documentation, remove redundancy without losing information. 
 For example, overview page and Architecture page both have HL Architecture diagram. Also, there are one or two pages in documentation that does not have enough information or diagrams, enrich them. For readme, remove reduncany, focus on diagrams early on, don't lose information.
 Also add a page to show cost for each poject by dollar amount, tokens consumed, models used, time taken from start to end, breakdown by model (stats) and add a page to put a bar chart to compare projects by total cost, total tokens, time taken from start to end
+Add a page for Model suggestion per agent with pricing list and add in paranthesis the price/number of tokens in all dropdowns for model selection.
+

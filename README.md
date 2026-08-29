@@ -23,27 +23,28 @@ policies** controlling when agents advance to the next stage.
 8. [Data flow](#data-flow)
 9. [Agent Framework workflow](#agent-framework-workflow)
 10. [Model selection and routing](#model-selection-and-routing)
-11. [Code generation providers](#code-generation-providers)
-12. [Agents in the workflow](#agents-in-the-workflow)
-13. [Features](#features)
-14. [Technology stack](#technology-stack)
-15. [Project setup prerequisites](#project-setup-prerequisites)
-16. [Repository layout](#repository-layout)
-17. [Quick start (local)](#quick-start-local)
-18. [Authentication & roles](#authentication--roles)
-19. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
-20. [Specialized agents](#specialized-agents)
-21. [Systems of Record configuration](#systems-of-record-configuration)
-22. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
-23. [Configuration guide](#configuration-guide)
-24. [Security & guardrails](#security--guardrails)
-25. [Testing](#testing)
-26. [Deployment (CI/CD)](#deployment-cicd)
-27. [Troubleshooting](#troubleshooting)
-28. [Future work](#future-work)
-29. [Diagrams & reference material](#diagrams--reference-material)
-30. [References](#references)
-31. [License](#license)
+11. [Cost, usage, and model governance](#cost-usage-and-model-governance)
+12. [Code generation providers](#code-generation-providers)
+13. [Agents in the workflow](#agents-in-the-workflow)
+14. [Features](#features)
+15. [Technology stack](#technology-stack)
+16. [Project setup prerequisites](#project-setup-prerequisites)
+17. [Repository layout](#repository-layout)
+18. [Quick start (local)](#quick-start-local)
+19. [Authentication & roles](#authentication--roles)
+20. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
+21. [Specialized agents](#specialized-agents)
+22. [Systems of Record configuration](#systems-of-record-configuration)
+23. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
+24. [Configuration guide](#configuration-guide)
+25. [Security & guardrails](#security--guardrails)
+26. [Testing](#testing)
+27. [Deployment (CI/CD)](#deployment-cicd)
+28. [Troubleshooting](#troubleshooting)
+29. [Future work](#future-work)
+30. [Diagrams & reference material](#diagrams--reference-material)
+31. [References](#references)
+32. [License](#license)
 
 ---
 
@@ -68,7 +69,7 @@ supplies built-in orchestration patterns, context & state management, guardrails
 does not hand-roll an orchestrator — see
 [Agent Framework workflow](#agent-framework-workflow) for the pattern chosen.
 
-**3 · Foundry agents for SDLC (center).** Twelve ordered Prompt Agents share the
+**3 · Foundry agents for SDLC (center).** Fourteen ordered Prompt Agents share the
 same deterministic graph while retaining independent run records, model policy,
 evidence, and checkpoints:
 
@@ -78,6 +79,7 @@ evidence, and checkpoints:
 | 020 | Plan | Planning Agent | Epics, Features, User Stories, Tasks, estimates, priorities, and acceptance criteria |
 | 030 | Design | Architecture Advisor Agent | Architecture, data model, API contracts, implementation plan, and threat-model inputs |
 | 040 | Build | Code Generation Agent | Application code, database assets, tests, CI/CD, branch, and pull request |
+| 045 | Build | Code Review Agent | Independent pull-request findings, severity, remediation, test gaps, and approve/request-changes recommendation |
 | 050 | Test | Test Planning Agent | Test strategy, suites, cases, traceability, and acceptance coverage |
 | 060 | Test | Testing Agent | Execution assessment, defects, quality evidence, and release-readiness findings |
 | 070 | Test | Test Automation Agent | Automated tests, pipeline integration, ADO Test Runs, and result evidence |
@@ -86,8 +88,9 @@ evidence, and checkpoints:
 | 100 | Operate | Ops Monitoring Agent | Service indicators, alerts, dashboards, incident triage, and runbooks |
 | 110 | Operate | Knowledge Assistant | Cited project, support, onboarding, and operational knowledge brief |
 | 120 | Improve | Insights Agent | Metrics, thresholds, risks, trends, and prioritized improvement backlog |
+| 130 | Improve | Cost Estimator Agent | Token and USD forecast, per-model cost analysis, and best-cost/best-quality/balanced model matrix |
 
-A **Shared Context & State** bus runs underneath all twelve so an agent inherits
+A **Shared Context & State** bus runs underneath all fourteen so an agent inherits
 what earlier phases produced instead of re-deriving it. In this implementation
 the lifecycle includes an explicit `security` stage before deployment, and the
 agents are fronted by **nine approval gates**. An agent advances only
@@ -169,7 +172,7 @@ GitHub Copilot cloud agent must be enabled for the target repository and license
 ### Microsoft Agent Framework execution model
 
 The API uses `agent-framework-core` to build one stable sequential graph with
-all **12 named Foundry-agent executors**. The configured `executionOrder` is the
+all **14 named Foundry-agent executors**. The configured `executionOrder` is the
 single source of truth for graph order. Each node checks its prerequisite gate,
 invokes its named Foundry Prompt Agent through APIM when eligible, persists the
 proposal, and passes control to the next node. A typed `RequestInfo` event pauses
@@ -192,7 +195,9 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **Durable automatic recovery:** persisted workflow tasks survive API restarts, bounded exponential retries absorb transient Foundry/APIM, connector, and external-CI waits, and a persisted circuit breaker pauses repeated model failures before resuming automatically. Deterministic errors stop visibly with the full actionable upstream detail; model refusals are rejected rather than accepted as artifacts.
 - **Detailed human-in-the-loop review before ADO publication:** reviewers can multi-select the exact Epics, Features, User Stories, and Tasks to publish; edit titles, descriptions, acceptance criteria, work-item types, and raw ADO HTML; add child items; or remove individual items, branches, and selected items. Selecting a child does not automatically select its parents, and deletion preserves the reviewer's scroll position and keyboard focus.
 - **Approval, revision, and accountability controls:** reviewers can save drafts, approve and publish selected content, request changes with a required comment, reject, or delegate. A change request automatically re-prompts the owning agent. Every decision records the actor, role, timestamp, comments, selected artifacts, and state transition.
-- **12 specialized Microsoft Foundry Prompt Agents:** Requirements, Planning, Architecture, Code Generation, Test Planning, Testing, Test Automation, Security and Compliance, DevOps/Release, Ops Monitoring, Knowledge Assistant, and Insights are nodes in one sequential Microsoft Agent Framework graph and execute through Azure API Management.
+- **14 specialized Microsoft Foundry Prompt Agents:** Requirements, Planning, Architecture, Code Generation, Code Review, Test Planning, Testing, Test Automation, Security and Compliance, DevOps/Release, Ops Monitoring, Knowledge Assistant, Insights, and Cost Estimator are nodes in one sequential Microsoft Agent Framework graph and execute through Azure API Management.
+- **Independent code review:** Code Review follows approved code generation and uses a different model deployment. It reviews the resulting pull request whether Foundry or GitHub Copilot generated it, reducing correlated generator/reviewer failure before Pull Request Review approval.
+- **Durable FinOps evidence:** Foundry input, cached-input, output, and total tokens are attributed to projects and models. Final statistics preserve estimated USD cost, model mix, elapsed time, and per-model breakdown for future Cost Estimator forecasts.
 - **Live Foundry model selection:** Global Settings discovers deployed, agent-compatible models from the configured Foundry account and provides one dropdown per agent. Projects inherit those choices and can override individual agents for future runs or revisions. Microsoft Model Router is used for mixed-complexity roles; fixed frontier or code-specialized models remain the defaults for critical roles.
 - **Nine evidence-aware approval gates:** Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Future agents stay disabled until all prerequisite gates are approved.
 - **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
@@ -223,7 +228,7 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 Every project chooses one execution policy during intake. Project sets can mix
 the policies, so a single ZIP launch can run autonomous, minimally reviewed,
 and fully reviewed projects in parallel. The policy changes **who approves a
-gate**; it does not change the 12-agent topology, evidence requirements,
+gate**; it does not change the 14-agent topology, evidence requirements,
 server-side permissions, APIM boundary, audit trail, or guardrails.
 
 In all three modes, Microsoft Agent Framework starts each newly eligible agent
@@ -244,7 +249,7 @@ requests changes, rejects, or delegates the proposal.
 
 ### Autonomous versus Human Review workflows
 
-Both workflows use the same 12-agent lifecycle, nine evidence-aware gates, and
+Both workflows use the same 14-agent lifecycle, nine evidence-aware gates, and
 continuous improvement loop. The difference is how each gate advances:
 
 - In **Fully autonomous** mode, the workflow validates the required evidence,
@@ -614,7 +619,8 @@ flowchart LR
   RQ --> PL[Planning]
   PL --> AR[Architecture]
   AR --> CG[Code Generation]
-  CG --> TP[Test Planning]
+  CG --> CR[Code Review]
+  CR --> TP[Test Planning]
   TP --> TE[Testing]
   TE --> TA[Test Automation]
   TA --> SC[Security]
@@ -622,7 +628,8 @@ flowchart LR
   DR --> OM[Ops Monitoring]
   OM --> KA[Knowledge Assistant]
   KA --> IN[Insights]
-  IN --> O[Workflow output]
+  IN --> CE[Cost Estimator]
+  CE --> O[Workflow output + final usage statistics]
   RQ -. unresolved gate .-> H[RequestInfo + checkpoint]
 ```
 
@@ -656,8 +663,8 @@ Foundry account:
 
 | Default | Agents | Reason |
 | --- | --- | --- |
-| `model-router` (Balanced) | Requirements, Planning, Test Planning, Ops Monitoring, Knowledge Assistant, Insights | Prompt complexity varies, so the router dynamically balances cost and quality |
-| `gpt-5.4` | Architecture, Security and Compliance, DevOps/Release | Deterministic high-quality reasoning for critical design, risk, and production decisions |
+| `model-router` (Balanced) | Requirements, Planning, Test Planning, Ops Monitoring, Knowledge Assistant, Insights, Cost Estimator | Prompt complexity varies, so the router dynamically balances cost and quality |
+| `gpt-5.4` | Architecture, Code Review, Security and Compliance, DevOps/Release | Deterministic high-quality reasoning for critical design, independent review, risk, and production decisions |
 | `gpt-5.1-codex` | Code Generation, Testing, Test Automation | Code-specialized generation and analysis |
 
 Microsoft's out-of-box **Model Router** analyzes each prompt and chooses an
@@ -680,9 +687,59 @@ only its selected model. `FOUNDRY_MODEL_MANAGEMENT_LIVE=1` enables this
 management path in Azure. Agent/version management uses managed identity against
 Foundry; **all model execution continues through the configured APIM gateway**.
 
+The API also enforces **model separation** between Code Generation and Code
+Review. A global or project model update is rejected when both agents resolve to
+the same deployment. This keeps the review independent even when a project
+overrides the recommended defaults.
+
+## Cost, usage, and model governance
+
+Every Foundry Responses result is inspected for provider-reported input,
+cached-input, output, and total token usage. The agent run stores those exact
+values when available and retains the earlier prompt estimate as an explicitly
+estimated fallback when a provider does not report usage.
+
+Estimated USD amounts use organization-maintained per-million-token planning
+rates in
+[`api/src/config/model-pricing.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/model-pricing.config.json).
+That configuration also holds a quality score used by the recommendation
+matrix. These values support forecasting and portfolio decisions; provider
+invoices and Azure billing exports remain authoritative.
+
+### Statistics saved after each project
+
+After the complete workflow finishes, the API writes one durable
+`projectStatistics` record containing:
+
+- start and completion timestamps plus total elapsed time, including approval waits;
+- agent-run count, measured/estimated status, and externally unmetered run count;
+- total tokens and estimated total USD cost;
+- every model used and a per-model input/cached/output/total-token and cost breakdown;
+- per-agent duration, model, token, and cost details;
+- the current best-cost, best-quality, and balanced model-selection matrix.
+
+Revisions update the project's cumulative statistics after their new workflow
+finishes. In-progress projects are calculated on read, while completed projects
+reuse the persisted snapshot. The Cost Estimator Agent receives the current
+snapshot and recent completed-project summaries, allowing future estimates to
+learn from actual project shape rather than static token limits alone.
+
+### Cost and comparison screens
+
+- **Project Cost & Usage** lists every project by tokens, estimated dollar
+  amount, models used, state, and start-to-finish time. Selecting a project opens
+  its per-model ledger and recommendation matrix.
+- **Project Cost Comparison** renders three bar-chart groups: total estimated
+  cost, total consumed tokens, and elapsed delivery time.
+
+GitHub Copilot cloud-agent model calls run outside this application's APIM and
+do not currently return token/billing usage to this API. Such runs are labelled
+**externally unmetered** and excluded from the USD model total with an explicit
+note; they are never silently presented as free inference.
+
 ## Agents in the workflow
 
-The project screen shows all **12 Prompt Agents** in execution order, with an
+The project screen shows all **14 Prompt Agents** in execution order, with an
 icon, current state, prerequisite gate, output gate, and separate columns for
 agent work and human action. Every agent consumes approved artifacts from the
 preceding phase together with the relevant systems of record, then produces an
@@ -700,7 +757,7 @@ Each runtime entry maps one-to-one to the named Prompt Agent in the
 `/api/projects/agentic-sdlc/agents/{name}/endpoint/protocols/openai/responses`
 through the wildcard `foundry-agents` APIM API. APIM authenticates to Foundry
 with managed identity; there is no browser-to-Foundry or API-to-Foundry bypass.
-Portal-facing agent names use execution-order prefixes from `010` through `120`
+Portal-facing agent names use execution-order prefixes from `010` through `130`
 so the Foundry agent list sorts in the same order as the Agent Framework graph.
 Internal `agentId` values remain unprefixed, preserving workflow checkpoints,
 approval rules, audit records, and project configuration.
@@ -774,10 +831,29 @@ changes traceable to the backlog.
 - **Inputs:** architecture decisions and acceptance criteria represented by
   Azure DevOps work items, plus the existing GitHub repository and source code.
 - **Outputs:** generated or updated GitHub source code, unit tests, and code-review
-  suggestions, along with linked Azure DevOps work-item updates. The resulting
-  implementation is handed to the Test Planning Agent.
+  context, along with linked Azure DevOps work-item updates. The resulting
+  implementation is handed to the independent Code Review Agent.
 
-### 5. Test Planning Agent (Test)
+### 5. Code Review Agent (Build)
+
+> **Diagram placeholder:** independent Code Review Agent inputs, findings, and
+> Pull Request Review handoff. Add `docs/Agents/04b_code_review_agent.png` after
+> the role diagram is generated; existing diagrams are intentionally unchanged.
+
+The Code Review Agent evaluates the generated pull request with a model that is
+different from the Code Generation Agent's model. The role remains mandatory
+and relevant when GitHub Copilot is selected because it reviews Copilot's pull
+request rather than repeating code generation.
+
+- **Inputs:** approved architecture and acceptance criteria, generated branch,
+  pull-request diff and checks, provider-neutral repository evidence, tests,
+  and prior approved artifacts.
+- **Outputs:** prioritized findings with severity and file evidence,
+  correctness/security/maintainability/test analysis, remediation guidance,
+  release risk, and an explicit approve or request-changes recommendation for
+  Pull Request Review Approval.
+
+### 6. Test Planning Agent (Test)
 
 ![Test Planning Agent inputs, outputs, and workflow handoff](docs/Agents/05_test_planning_agent.png)
 
@@ -793,7 +869,7 @@ traceable quality strategy before execution starts.
 - **Outputs:** editable unit, integration, security, performance, and UAT scope,
   plus idempotent Azure DevOps Test Plan, suite, and Test Case proposals.
 
-### 6. Testing Agent (Test)
+### 7. Testing Agent (Test)
 
 ![Testing Agent inputs, outputs, and workflow handoff](docs/Agents/06_testing_agent.png)
 
@@ -809,7 +885,7 @@ against the approved plan.
 - **Outputs:** execution assessment, pass/fail evidence, gaps, defects, quality
   risks, and a recommendation for Test Acceptance Approval.
 
-### 7. Test Automation Agent (Test)
+### 8. Test Automation Agent (Test)
 
 ![Test Automation Agent inputs, outputs, and workflow handoff](docs/Agents/07_test_automation_agent.png)
 
@@ -826,7 +902,7 @@ and durable execution records.
   plan-linked ADO Test Runs and results, automated Test Case status, and
   retry-safe evidence for Test Acceptance Approval.
 
-### 8. Security and Compliance Agent (Security)
+### 9. Security and Compliance Agent (Security)
 
 ![Security and Compliance Agent inputs, outputs, and workflow handoff](docs/Agents/08_security_and_compliance_agent.png)
 
@@ -843,7 +919,7 @@ infrastructure, work items, test evidence, and release controls.
   residual risk, remediation work, and a promotion recommendation for Security
   Review Approval.
 
-### 9. DevOps / Release Agent (Deploy)
+### 10. DevOps / Release Agent (Deploy)
 
 ![DevOps and Release Agent inputs, outputs, and workflow handoff](docs/Agents/09_devops_release_agent.png)
 
@@ -860,7 +936,7 @@ publishes it only after PR, test, security, and release prerequisites pass.
   approved merge, deployment run, smoke-test results, hosted links, ADO project
   wiki, and Closed work-item evidence after successful publication.
 
-### 10. Ops Monitoring Agent (Operate)
+### 11. Ops Monitoring Agent (Operate)
 
 ![Ops Monitoring Agent inputs, outputs, and workflow handoff](docs/Agents/10_ops_monitoring_agent.png)
 
@@ -876,7 +952,7 @@ operational control plan.
 - **Outputs:** health indicators, alert thresholds, dashboard plan, incident
   triage, runbooks, rollback signals, and prioritized operational work items.
 
-### 11. Knowledge Assistant (Operate)
+### 12. Knowledge Assistant (Operate)
 
 ![Knowledge Assistant inputs, outputs, and workflow handoff](docs/Agents/11_knowledge_assistant.png)
 
@@ -892,7 +968,7 @@ project and operational records without owning publication side effects.
 - **Outputs:** cited support brief, onboarding guidance, decision history,
   troubleshooting context, and knowledge gaps for project owners.
 
-### 12. Insights Agent (Improve)
+### 13. Insights Agent (Improve)
 
 ![Insights Agent inputs, outputs, and workflow handoff](docs/Agents/12_insights_agent.png)
 
@@ -908,6 +984,23 @@ into measurable improvements for the next iteration.
 - **Outputs:** trends, thresholds, risks, improvement opportunities, and an
   ordered backlog written to Azure DevOps/GitHub only after the applicable
   approval policy succeeds. Its recommendations return to Planning.
+
+### 14. Cost Estimator Agent (Improve)
+
+> **Diagram placeholder:** Cost Estimator Agent telemetry inputs, historical
+> statistics, and model-selection outputs. Add
+> `docs/Agents/13_cost_estimator_agent.png` after the role diagram is generated;
+> existing diagrams are intentionally unchanged.
+
+The Cost Estimator Agent is the final advisory node. It runs after Operate and
+Improve Approval so its forecast can use the complete governed delivery record.
+
+- **Inputs:** current project token and elapsed-time measurements, configured
+  per-model planning rates and quality scores, model/routed-model identities,
+  externally unmetered indicators, and recent completed-project statistics.
+- **Outputs:** forecast token consumption and estimated USD total, assumptions,
+  per-model cost observations, and an agent-by-model update matrix for lowest
+  cost, highest quality, and balanced cost/quality.
 
 
 ## Features
@@ -925,12 +1018,12 @@ into measurable improvements for the next iteration.
 - **Persisted automation queue and circuit breaker** with restart recovery,
   bounded backoff, transient HTTP/Foundry retry, external CI polling, and
   deterministic failure surfacing for autonomous and minimally reviewed runs.
-- **Automatic 12-agent continuation** through Microsoft Agent Framework after
+- **Automatic 14-agent continuation** through Microsoft Agent Framework after
   submission and every approval, with no per-agent Run buttons.
 - **Completed-project revisions** from Requirements, Planning/Work Items, or
   Architecture, preserving the baseline and carrying forward valid approvals.
 - **Nine approval gates** with approve / reject / request-changes / delegate.
-- **12-agent visual workflow** with named Foundry identity, status, prerequisite,
+- **14-agent visual workflow** with named Foundry identity, status, prerequisite,
   human checkpoint, and last-run evidence for every agent.
 - **Human review workspace** with editable proposal content, multi-select
   artifacts/work items, and approval-time publication to ADO/GitHub/Azure.
@@ -954,7 +1047,8 @@ into measurable improvements for the next iteration.
   containing ownership, hosted UI/API/health/Swagger/OpenAPI links, source,
   pull request, deployment run, merge commit, stack, and governance context.
 - **Visual in-app documentation** with high-level architecture, human/agent
-  dataflow, Agent Framework patterns, and role diagrams for all 12 agents.
+  dataflow, Agent Framework patterns, twelve existing role diagrams, and
+  placeholders for the Code Review and Cost Estimator role diagrams.
 - **Configurable agents** — model, APIM route, tools, MCP servers, guardrails,
   token limits, and approval requirements are all data-driven.
 - **APIM gateway layer** in front of Foundry with full audit logging.

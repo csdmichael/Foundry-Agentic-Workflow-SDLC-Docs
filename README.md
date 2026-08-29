@@ -23,26 +23,27 @@ policies** controlling when agents advance to the next stage.
 8. [Data flow](#data-flow)
 9. [Agent Framework workflow](#agent-framework-workflow)
 10. [Model selection and routing](#model-selection-and-routing)
-11. [Agents in the workflow](#agents-in-the-workflow)
-12. [Features](#features)
-13. [Technology stack](#technology-stack)
-14. [Project setup prerequisites](#project-setup-prerequisites)
-15. [Repository layout](#repository-layout)
-16. [Quick start (local)](#quick-start-local)
-17. [Authentication & roles](#authentication--roles)
-18. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
-19. [Specialized agents](#specialized-agents)
-20. [Systems of Record configuration](#systems-of-record-configuration)
-21. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
-22. [Configuration guide](#configuration-guide)
-23. [Security & guardrails](#security--guardrails)
-24. [Testing](#testing)
-25. [Deployment (CI/CD)](#deployment-cicd)
-26. [Troubleshooting](#troubleshooting)
-27. [Future work](#future-work)
-28. [Diagrams & reference material](#diagrams--reference-material)
-29. [References](#references)
-30. [License](#license)
+11. [Code generation providers](#code-generation-providers)
+12. [Agents in the workflow](#agents-in-the-workflow)
+13. [Features](#features)
+14. [Technology stack](#technology-stack)
+15. [Project setup prerequisites](#project-setup-prerequisites)
+16. [Repository layout](#repository-layout)
+17. [Quick start (local)](#quick-start-local)
+18. [Authentication & roles](#authentication--roles)
+19. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
+20. [Specialized agents](#specialized-agents)
+21. [Systems of Record configuration](#systems-of-record-configuration)
+22. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
+23. [Configuration guide](#configuration-guide)
+24. [Security & guardrails](#security--guardrails)
+25. [Testing](#testing)
+26. [Deployment (CI/CD)](#deployment-cicd)
+27. [Troubleshooting](#troubleshooting)
+28. [Future work](#future-work)
+29. [Diagrams & reference material](#diagrams--reference-material)
+30. [References](#references)
+31. [License](#license)
 
 ---
 
@@ -137,6 +138,33 @@ All Azure AI Foundry calls route through Azure API Management. The backend never
 calls Foundry directly except when `FOUNDRY_ALLOW_DIRECT=1` is set for local
 development. Every call logs prompt ID, agent ID, model name, token estimate,
 project ID, user ID, approval gate ID, workflow run ID, and correlation ID.
+
+## Code generation providers
+
+The proof of concept supports two code-generation providers selected during project creation. Microsoft Foundry remains the default. GitHub Copilot cloud agent is an opt-in external provider for projects that benefit from a repository-native coding workflow.
+
+When Microsoft Foundry is selected, the Code Generation Agent produces a governed proposal through Azure API Management. After approval, the application creates the generated branch, commits the application scaffold, and opens the pull request. When GitHub Copilot is selected, Microsoft Agent Framework still owns workflow sequencing, approval gates, checkpointing, retries, and audit state, while the API submits and monitors an asynchronous GitHub Agent Tasks API task. Copilot works in the provisioned project repository and returns a branch and pull request to the existing review, test, security, and release stages.
+
+The application calls the GitHub Agent Tasks API directly rather than asking the Foundry Code Generation Agent to invoke Copilot through GitHub MCP. GitHub MCP is appropriate for interactive, model-directed tool use. For a provider choice already made by the application, an additional Foundry inference would add latency, token consumption, and nondeterministic tool selection without improving the handoff. Direct task submission also gives the workflow a durable GitHub task identifier and explicit states such as queued, in progress, waiting for user, completed, failed, timed out, and cancelled.
+
+### Provider comparison
+
+| Area | Microsoft Foundry Code Generation Agent | GitHub Copilot cloud agent |
+| --- | --- | --- |
+| Execution location | Microsoft Foundry through the configured APIM gateway | GitHub-hosted cloud agent environment |
+| APIM governance | Model requests are governed through APIM authentication, policies, quotas, logging, and controls | Internal model requests execute within GitHub and cannot pass through this application's APIM gateway |
+| Cost monitoring | Token estimates and model usage can be correlated to each project and workflow through APIM telemetry | Usage is measured through GitHub Copilot credits and GitHub Actions minutes; project attribution uses the persisted task and pull request identifiers rather than APIM token telemetry |
+| Workflow governance | Microsoft Agent Framework manages execution, checkpoints, approvals, artifacts, and audit records | The same Agent Framework workflow governs task submission, polling, approvals, pull request evidence, retries, and audit records |
+| Repository changes | The approved Foundry proposal is converted into files, a branch, commits, and a pull request by the application | Copilot edits the repository in its ephemeral GitHub Actions environment and creates the branch and pull request |
+| Model selection | Controlled through Foundry deployments, Model Router, and project-level model overrides | Controlled by GitHub Copilot availability, subscription policy, and optional task model selection |
+| Operational visibility | Centralized through APIM, Foundry telemetry, application traces, and audit logs | Split between application traces and GitHub task, pull request, Actions, and Copilot usage data |
+| Best fit | Workloads requiring centralized model policy, APIM enforcement, and detailed per-project cost attribution | Repository-focused implementation where native GitHub automation and autonomous pull request creation are the priority |
+
+### APIM exception
+
+All Microsoft Foundry model calls continue to route through the configured Azure API Management gateway. GitHub Copilot cloud agent is an explicitly selected external execution provider, and its internal model calls run within GitHub. Selecting GitHub Copilot is therefore an explicit exception to the APIM model-execution boundary. The exception applies only to GitHub-hosted inference. Project workflow state, task identifiers, status, pull-request evidence, approval decisions, and audit records remain governed by this application.
+
+GitHub Copilot cloud agent must be enabled for the target repository and licensed for the user represented by the configured user-to-server credential. The GitHub Agent Tasks API supports personal access tokens, OAuth user tokens, and GitHub App user-to-server tokens. GitHub App installation tokens are not supported. The Agent Tasks API is currently in public preview and may change.
 
 ### Microsoft Agent Framework execution model
 

@@ -19,7 +19,7 @@ The guide covers:
 - New Project Set Default Settings and every step of the Custom workflow.
 - Existing and deleted projects, project details, revision, and cleanup evidence.
 - Human Review, Minimal, and Autonomous execution policies.
-- All 12 ordered Microsoft Foundry Prompt Agents and all nine approval gates.
+- All 14 ordered Microsoft Foundry Prompt Agents and all ten approval gates.
 - Workflow Runs, Human Approval Queue, Agent Activity, and Audit Trail.
 - User, project access, role, agent, model, system-of-record, APIM, and configuration administration.
 - Generated ADO work items, sprints, queries, dashboards, delivery plan, test plan, test run, wiki, and Azure Repo.
@@ -121,6 +121,9 @@ Global settings are inherited by default. Toggle an override only when this proj
 ### Custom - Step 5: Lifecycle agents and models
 
 All enabled agents are selected by default. Clear an agent only when the project intentionally excludes that lifecycle responsibility. Model dropdowns inherit global model policy; a project override applies to future agent runs and revisions.
+Every choice includes its input and output price per 1M tokens in parentheses.
+Successful deployments that cannot back a Foundry Prompt Agent remain visible
+but disabled, together with the compatibility reason.
 
 <img src="images/07b-new-project-custom-agents.png" alt="New Project Custom lifecycle agents">
 
@@ -178,7 +181,7 @@ Deleted Projects is a read-only audit projection. It retains who deleted the pro
 
 <img src="images/09-deleted-projects.png" alt="Deleted Projects">
 
-## The 12-agent lifecycle
+## The 14-agent lifecycle
 
 Every project uses the same ordered topology. The selected execution policy changes who approves a gate, not agent responsibilities, evidence requirements, connector boundaries, or audit behavior.
 
@@ -188,6 +191,7 @@ Every project uses the same ordered topology. The selected execution policy chan
 | 020 | Planning Agent | Plan | Epic, Features, User Stories, Tasks, estimates, priorities, acceptance criteria. |
 | 030 | Architecture Advisor Agent | Design | Architecture, data model, API contracts, threat-model and implementation decisions. |
 | 040 | Code Generation Agent | Build | Application scaffold, database, tests, pipelines, branch, and pull request. |
+| 045 | Code Review Agent | Build | Independent pull-request findings, remediation, test gaps, and release recommendation. |
 | 050 | Test Planning Agent | Test | Test strategy, suites, cases, and requirement traceability. |
 | 060 | Testing Agent | Test | Exact-commit CI assessment, defects, quality evidence, and readiness. |
 | 070 | Test Automation Agent | Test | Automated runs, result evidence, and ADO test updates. |
@@ -196,20 +200,26 @@ Every project uses the same ordered topology. The selected execution policy chan
 | 100 | Ops Monitoring Agent | Operate | Health indicators, alerts, dashboards, incidents, and runbooks. |
 | 110 | Knowledge Assistant | Operate | Cited project and operational knowledge brief. |
 | 120 | Insights Agent | Improve | Metrics, thresholds, trends, risks, and prioritized improvement backlog. |
+| 130 | Cost Estimator Agent | Improve | Token and cost forecast plus best-cost, best-quality, and balanced model guidance. |
 
 ## Approval gates
 
-Nine gates separate generation from publication:
+Ten gates separate estimation, generation, and publication:
 
-1. Plan and Scope Approval.
-2. Backlog Generation Approval.
-3. Architecture and Design Approval.
-4. Code Generation Approval.
-5. Pull Request Review Approval.
-6. Test Acceptance Approval.
-7. Security Review Approval.
-8. Release and Deployment Approval.
-9. Operate and Improve Approval.
+1. Cost and Time Estimate Approval.
+2. Plan and Scope Approval.
+3. Backlog Generation Approval.
+4. Architecture and Design Approval.
+5. Code Generation Approval.
+6. Pull Request Review Approval.
+7. Test Acceptance Approval.
+8. Security Review Approval.
+9. Release and Deployment Approval.
+10. Operate and Improve Approval.
+
+Submission creates and attaches the preflight estimate before any model call.
+Human Review and Minimal require a person to approve that estimate before agents
+can run. Autonomous validates the artifact and records an automated approval.
 
 A gate cannot publish until its prerequisite is approved and required artifact/tool evidence exists. Approve records the selected artifacts and triggers publication. Request Changes requires a comment and returns the owning agent output for revision. Reject closes the decision. Delegate records the replacement approver. Every transition is appended to the audit trail.
 
@@ -217,8 +227,8 @@ A gate cannot publish until its prerequisite is approved and required artifact/t
 
 | Policy | Human checkpoints | Behavior |
 | --- | --- | --- |
-| Human Review | All nine gates | A person reviews every proposal and publication action. |
-| Minimal | Four consequential gates | Routine evidence gates advance automatically; backlog, architecture, pull request, and release decisions pause. |
+| Human Review | All ten gates | A person reviews the estimate, every proposal, and every publication action. |
+| Minimal | Preflight estimate plus four consequential gates | The estimate pauses before inference; routine evidence gates then advance automatically, while backlog, architecture, pull request, and release decisions pause. |
 | Autonomous | None | Policy validates evidence and records automated decisions across the full lifecycle. |
 
 ### Human Review
@@ -261,7 +271,7 @@ Equipment Calibration Compliance demonstrates a completed autonomous run.
 
 <img src="images/40-autonomous-completed-overview.png" alt="Completed autonomous project overview">
 
-All 12 agents complete in order; checkpoints are labeled automated rather than awaiting a human action.
+All 14 agents complete in order; checkpoints are labeled automated rather than awaiting a human action.
 
 <img src="images/41-autonomous-agent-workflow.png" alt="Autonomous 12-agent workflow">
 
@@ -328,6 +338,14 @@ The queue consolidates actionable gates across projects. Open a row to review th
 Agent Activity is the operational trace of model runs and outputs. Use it to inspect agent identity, lifecycle stage, model, project, status, duration, and correlation data.
 
 <img src="images/12-agent-activity.png" alt="Agent Activity">
+
+### Model Suggestions and Pricing
+
+Model Suggestions & Pricing lists the recommended deployment and rationale for
+each lifecycle agent. Its pricing matrix shows normalized input, cached-input,
+and output rates per 1M tokens, quality score, and whether a rate came from Azure
+Retail Prices or the configured fallback policy. Azure billing exports remain
+the authoritative charge record.
 
 ### Audit Trail
 

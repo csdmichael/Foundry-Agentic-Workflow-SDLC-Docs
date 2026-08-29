@@ -93,7 +93,8 @@ evidence, and checkpoints:
 A **Shared Context & State** bus runs underneath all fourteen so an agent inherits
 what earlier phases produced instead of re-deriving it. In this implementation
 the lifecycle includes an explicit `security` stage before deployment, and the
-agents are fronted by **nine approval gates**. An agent advances only
+agents are fronted by **ten approval gates**, beginning with a cost and time
+estimate review before inference. An agent advances only
 after each prerequisite is explicitly approved by a reviewer or by the selected
 automation policy ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
 
@@ -198,8 +199,8 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **14 specialized Microsoft Foundry Prompt Agents:** Requirements, Planning, Architecture, Code Generation, Code Review, Test Planning, Testing, Test Automation, Security and Compliance, DevOps/Release, Ops Monitoring, Knowledge Assistant, Insights, and Cost Estimator are nodes in one sequential Microsoft Agent Framework graph and execute through Azure API Management.
 - **Independent code review:** Code Review follows approved code generation and uses a different model deployment. It reviews the resulting pull request whether Foundry or GitHub Copilot generated it, reducing correlated generator/reviewer failure before Pull Request Review approval.
 - **Durable FinOps evidence:** Foundry input, cached-input, output, and total tokens are attributed to projects and models. Final statistics preserve estimated USD cost, model mix, elapsed time, and per-model breakdown for future Cost Estimator forecasts.
-- **Live Foundry model selection:** Global Settings discovers deployed, agent-compatible models from the configured Foundry account and provides one dropdown per agent. Projects inherit those choices and can override individual agents for future runs or revisions. Microsoft Model Router is used for mixed-complexity roles; fixed frontier or code-specialized models remain the defaults for critical roles.
-- **Nine evidence-aware approval gates:** Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Future agents stay disabled until all prerequisite gates are approved.
+- **Live Foundry model selection and pricing:** Global Settings discovers every successful deployment from the configured Foundry account. Agent-compatible models are selectable; embedding, image, and other incompatible deployments remain visible with a disabled state and explanation. Every model dropdown includes input/output price per 1M tokens. The Model Suggestions & Pricing page lists per-agent recommendations, quality scores, cached-input rates, source, and effective pricing.
+- **Ten evidence-aware approval gates:** Cost and Time Estimate, Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Human and Minimal modes require approval of the generated preflight estimate before any agent invocation; Autonomous validates its attached estimate artifact and records an automated decision.
 - **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
 - **Parallel project sets:** one wizard creates `2–20` projects, defaults each to Fully autonomous execution, applies one shared agent/model policy, and allows a project to replace that policy without changing its siblings. Manual intake and validated folder-per-project ZIP import both create independent workflow runs, which advance concurrently with isolated checkpoints, approvals, audit records, and systems of record.
 - **Rich Azure DevOps planning automation:** approved Planning output creates an idempotent Epic-to-Task hierarchy plus dated sprints, shared queries, dashboards, delivery plans, estimates, tags, priorities, business value, and acceptance criteria. Generated work items are displayed as a parent/child tree, collapsed by default.
@@ -239,7 +240,7 @@ requests changes, rejects, or delegates the proposal.
 | Behavior | Autonomous | Minimal Human Review | Human Review |
 | --- | --- | --- | --- |
 | Intended use | Repeatable delivery for trusted patterns, demos, and high-volume project sets | Default enterprise balance: human control at consequential decisions without reviewing routine evidence | Maximum governance for regulated, high-risk, unfamiliar, or first-of-kind workloads |
-| Human checkpoints | None | 4 consequential checkpoints | All 9 checkpoints |
+| Human checkpoints | None | Preflight estimate + 4 consequential checkpoints | All 10 checkpoints |
 | Agent execution | Starts automatically when prerequisites are satisfied | Starts automatically until the next selected human checkpoint | Starts automatically after each human-approved checkpoint |
 | Gate decisions | The workflow policy validates evidence and records an automated approval | The policy auto-approves routine gates; people approve the four gates listed below | A person reviews and decides every gate |
 | Editing proposals | Outputs are validated and published automatically | Reviewers can edit/select backlog and architecture proposals at the selected checkpoints | Reviewers can edit/select every gated proposal before publication |
@@ -267,7 +268,7 @@ continuous improvement loop. The difference is how each gate advances:
 
 ![Human Review Agentic SDLC workflow with reviewer decisions at all nine gates](docs/HumanReview-SDLC-Workflow.png)
 
-**Minimal Human Review** combines these two paths: Backlog Generation,
+**Minimal Human Review** combines these two paths: Cost and Time Estimate, Backlog Generation,
 Architecture and Design, Pull Request Review, and Release and Deployment use
 the human-review behavior, while the other five gates advance automatically.
 
@@ -275,6 +276,7 @@ the human-review behavior, while the other five gates advance automatically.
 
 | Approval gate | Autonomous | Minimal Human Review | Human Review |
 | --- | --- | --- | --- |
+| Cost and Time Estimate | Automatic after estimate validation | **Human before inference** | **Human before inference** |
 | Plan and Scope | Automatic | Automatic | Human |
 | Backlog Generation | Automatic | **Human** | Human |
 | Architecture and Design | Automatic | **Human** | Human |
@@ -306,7 +308,7 @@ Acceptance, Security Review, and Operate/Improve in this mode. Those stages are
 not skipped; their artifacts and external evidence remain available in Project
 Details, the per-project trace, Agent Activity, and Audit Trail.
 
-**Human Review** pauses at all nine gates. Use it when every transition needs a
+**Human Review** pauses at all ten gates. Use it when every transition needs a
 named accountable reviewer, when proposals require frequent editing, or when a
 customer wants to demonstrate the complete human-in-the-loop governance model.
 It provides more decision points, but it also increases elapsed delivery time
@@ -502,8 +504,9 @@ sequenceDiagram
   participant Foundry
   U->>UI: Create & submit project
   UI->>API: POST /projects/:id/submit
-  API-->>UI: Workflow run + 9 gates (Plan awaiting)
-  U->>API: Approve "Plan & Scope" (review modes)
+  API-->>UI: Workflow run + 10 gates (estimate awaiting)
+  U->>API: Approve cost and time estimate (human modes)
+  U->>API: Approve "Plan & Scope" (review mode)
   API->>API: Resume Agent Framework graph
   API->>APIM: callFoundry (pre-guardrails passed)
   APIM->>Foundry: named agent Responses endpoint
@@ -534,7 +537,7 @@ sequenceDiagram
   API->>AUD: audit(project.create, project.provision.*, project.intake.publish)
   API->>ACS: Notify unique business and technical owners (Created)
   UI->>API: POST /projects/:id/submit
-  API->>DB: Create workflow run + 9 approval gates
+  API->>DB: Create workflow run + 10 approval gates + estimate artifact
   API->>AUD: audit(project.submit)
 
   Note over API,DB: Plan & Scope gate = AwaitingApproval
@@ -642,11 +645,11 @@ not introduce a direct Foundry path.
 
 ## Model selection and routing
 
-The API discovers deployments from the configured Microsoft Foundry account by
-using Azure Resource Manager and keeps only successful deployments that expose
-the `agentsV2` capability. The current account includes `model-router`,
+The API discovers every successful deployment from the configured Microsoft Foundry account by
+using Azure Resource Manager. Deployments that expose the `agentsV2` capability
+are selectable; incompatible deployments remain visible and disabled with a reason. The current account includes `model-router`,
 `gpt-5.4`, `gpt-5.1-codex`, `Kimi-K2.7-Code`, and `gpt-4.1` as agent-compatible
-choices; embedding and image-only deployments are not shown in agent dropdowns.
+choices; embedding and image-only deployments are visible but cannot be selected.
 The discovery result is cached for five minutes and falls back to checked-in
 recommendations when Azure is unavailable.
 
@@ -699,12 +702,22 @@ cached-input, output, and total token usage. The agent run stores those exact
 values when available and retains the earlier prompt estimate as an explicitly
 estimated fallback when a provider does not report usage.
 
-Estimated USD amounts use organization-maintained per-million-token planning
-rates in
+Estimated USD amounts first resolve consumption meters from Azure Retail Prices
+for the discovered Foundry model and deployment SKU. Meter names, token units,
+geography, effective dates, cached input, and input/output direction are normalized;
+unrelated batch, fine-tuning, hosting, image, audio, realtime, and provisioned meters
+are rejected. When no trustworthy public meter resolves, the API uses
+organization-maintained per-million-token planning rates in
 [`api/src/config/model-pricing.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/model-pricing.config.json).
 That configuration also holds a quality score used by the recommendation
 matrix. These values support forecasting and portfolio decisions; provider
 invoices and Azure billing exports remain authoritative.
+
+The **Model Suggestions & Pricing** page shows the recommended deployment and
+rationale for every lifecycle agent alongside input, cached-input, and output
+prices per 1M tokens, quality score, and whether each rate came from Azure retail
+data or configured fallback. The same input/output unit-qualified price appears
+in every global, project, and project-set model-selection dropdown.
 
 ### Statistics saved after each project
 

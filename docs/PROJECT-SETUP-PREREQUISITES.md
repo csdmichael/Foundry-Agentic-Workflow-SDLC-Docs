@@ -33,7 +33,7 @@ flowchart LR
   subgraph AI[Microsoft Foundry and AI gateway]
       APIM[Azure API Management<br/>AI gateway policies]
     Foundry[Microsoft Foundry project]
-      Agents[12 ordered Prompt Agents<br/>010 through 120]
+      Agents[14 ordered Prompt Agents<br/>010 through 130]
       Models[Model Router<br/>gpt-5.4<br/>gpt-5.1-codex]
   end
 
@@ -94,7 +94,7 @@ flowchart LR
 
 | Service | Required use |
 | --- | --- |
-| Microsoft Foundry account and project | Hosts the 12 Prompt Agents and model deployments |
+| Microsoft Foundry account and project | Hosts the 14 Prompt Agents and model deployments |
 | Azure API Management | AI gateway, managed-identity backend authentication, policy enforcement, and correlation |
 | Microsoft Entra ID | User authentication, app roles, managed identities, Agent Identities, and GitHub OIDC trust |
 | Azure App Service plan | Hosts the UI and API Linux web apps |
@@ -237,6 +237,7 @@ Create one Prompt Agent per workflow role. Keep the internal application
 | 020 | `020-planning-agent` |
 | 030 | `030-architecture-advisor-agent` |
 | 040 | `040-code-generation-agent` |
+| 045 | `045-code-review-agent` |
 | 050 | `050-test-planning-agent` |
 | 060 | `060-testing-agent` |
 | 070 | `070-test-automation-agent` |
@@ -245,6 +246,7 @@ Create one Prompt Agent per workflow role. Keep the internal application
 | 100 | `100-ops-monitoring-agent` |
 | 110 | `110-knowledge-assistant` |
 | 120 | `120-insights-agent` |
+| 130 | `130-cost-estimator-agent` |
 
 Multiples of ten leave insertion room for future roles without renumbering
 existing agents. Verify that Foundry created one active Agent Identity blueprint,

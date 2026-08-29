@@ -182,7 +182,7 @@ storage preserves pending requests and executor state under the configured
 persistence root.
 
 Agent identities are stable configuration-derived IDs so a checkpoint can be
-rehydrated with the same 12-node topology. A policy coordinator can approve a
+rehydrated with the same 14-node topology. A policy coordinator can approve a
 non-human gate only after its artifact and tool-evidence requirements pass; ADO,
 GitHub, test, and Azure side effects still occur only during gate publication.
 
@@ -775,9 +775,18 @@ so the Foundry agent list sorts in the same order as the Agent Framework graph.
 Internal `agentId` values remain unprefixed, preserving workflow checkpoints,
 approval rules, audit records, and project configuration.
 
+The diagrams below are the current role cards for all 14 agents. Each card
+explains the agent's position in the lifecycle, the approved context and Systems
+of Record it consumes, the proposal or evidence it produces, and the handoff to
+the next agent or approval gate. Prefixes `010` through `120` mirror the ordered
+delivery graph. The Cost Estimator card uses `000` to emphasize that the same
+agent supplies the preflight estimate before inference; its completed-run
+forecast and model recommendations are documented last because they use the
+full delivery record.
+
 ### 1. Requirements Agent (Plan)
 
-![Requirements Agent inputs, outputs, and workflow handoff](docs/Agents/01_requirements_agent.png)
+![Requirements Agent inputs, outputs, and workflow handoff](docs/Agents/010_requirements_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -795,7 +804,7 @@ statement of business intent before delivery planning begins.
 
 ### 2. Planning Agent (Plan)
 
-![Planning Agent inputs, outputs, and workflow handoff](docs/Agents/02_planning_agent.png)
+![Planning Agent inputs, outputs, and workflow handoff](docs/Agents/020_planning_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -813,7 +822,7 @@ prioritized delivery hierarchy.
 
 ### 3. Architecture Advisor Agent (Design)
 
-![Architecture Advisor Agent inputs, outputs, and workflow handoff](docs/Agents/03_architecture_advisor_agent.png)
+![Architecture Advisor Agent inputs, outputs, and workflow handoff](docs/Agents/030_architecture_advisor_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -832,7 +841,7 @@ secure technical design.
 
 ### 4. Code Generation Agent (Build)
 
-![Code Generation Agent inputs, outputs, and workflow handoff](docs/Agents/04_code_generation_agent.png)
+![Code Generation Agent inputs, outputs, and workflow handoff](docs/Agents/040_code_generation_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -849,9 +858,7 @@ changes traceable to the backlog.
 
 ### 5. Code Review Agent (Build)
 
-> **Diagram placeholder:** independent Code Review Agent inputs, findings, and
-> Pull Request Review handoff. Add `docs/Agents/04b_code_review_agent.png` after
-> the role diagram is generated; existing diagrams are intentionally unchanged.
+![Code Review Agent inputs, outputs, findings, and Pull Request Review handoff](docs/Agents/045_code_review_agent.png)
 
 The Code Review Agent evaluates the generated pull request with a model that is
 different from the Code Generation Agent's model. The role remains mandatory
@@ -868,7 +875,7 @@ request rather than repeating code generation.
 
 ### 6. Test Planning Agent (Test)
 
-![Test Planning Agent inputs, outputs, and workflow handoff](docs/Agents/05_test_planning_agent.png)
+![Test Planning Agent inputs, outputs, and workflow handoff](docs/Agents/050_test_planning_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -884,7 +891,7 @@ traceable quality strategy before execution starts.
 
 ### 7. Testing Agent (Test)
 
-![Testing Agent inputs, outputs, and workflow handoff](docs/Agents/06_testing_agent.png)
+![Testing Agent inputs, outputs, and workflow handoff](docs/Agents/060_testing_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -900,7 +907,7 @@ against the approved plan.
 
 ### 8. Test Automation Agent (Test)
 
-![Test Automation Agent inputs, outputs, and workflow handoff](docs/Agents/07_test_automation_agent.png)
+![Test Automation Agent inputs, outputs, and workflow handoff](docs/Agents/070_test_automation_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -917,7 +924,7 @@ and durable execution records.
 
 ### 9. Security and Compliance Agent (Security)
 
-![Security and Compliance Agent inputs, outputs, and workflow handoff](docs/Agents/08_security_and_compliance_agent.png)
+![Security and Compliance Agent inputs, outputs, and workflow handoff](docs/Agents/080_security_and_compliance_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -934,7 +941,7 @@ infrastructure, work items, test evidence, and release controls.
 
 ### 10. DevOps / Release Agent (Deploy)
 
-![DevOps and Release Agent inputs, outputs, and workflow handoff](docs/Agents/09_devops_release_agent.png)
+![DevOps and Release Agent inputs, outputs, and workflow handoff](docs/Agents/090_devops_release_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -951,7 +958,7 @@ publishes it only after PR, test, security, and release prerequisites pass.
 
 ### 11. Ops Monitoring Agent (Operate)
 
-![Ops Monitoring Agent inputs, outputs, and workflow handoff](docs/Agents/10_ops_monitoring_agent.png)
+![Ops Monitoring Agent inputs, outputs, and workflow handoff](docs/Agents/100_ops_monitoring_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -967,7 +974,7 @@ operational control plan.
 
 ### 12. Knowledge Assistant (Operate)
 
-![Knowledge Assistant inputs, outputs, and workflow handoff](docs/Agents/11_knowledge_assistant.png)
+![Knowledge Assistant inputs, outputs, and workflow handoff](docs/Agents/110_knowledge_assistant.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -983,7 +990,7 @@ project and operational records without owning publication side effects.
 
 ### 13. Insights Agent (Improve)
 
-![Insights Agent inputs, outputs, and workflow handoff](docs/Agents/12_insights_agent.png)
+![Insights Agent inputs, outputs, and workflow handoff](docs/Agents/120_insights_agent.png)
 
 | Specialized agent | Direct Foundry portal | Microsoft Entra identity | Assigned roles |
 | --- | --- | --- | --- |
@@ -1000,13 +1007,12 @@ into measurable improvements for the next iteration.
 
 ### 14. Cost Estimator Agent (Improve)
 
-> **Diagram placeholder:** Cost Estimator Agent telemetry inputs, historical
-> statistics, and model-selection outputs. Add
-> `docs/Agents/13_cost_estimator_agent.png` after the role diagram is generated;
-> existing diagrams are intentionally unchanged.
+![Cost Estimator Agent telemetry inputs, historical statistics, forecasts, and model-selection outputs](docs/Agents/000_cost_estimator_agent.png)
 
-The Cost Estimator Agent is the final advisory node. It runs after Operate and
-Improve Approval so its forecast can use the complete governed delivery record.
+The Cost Estimator Agent has two advisory responsibilities: it supplies the
+preflight cost-and-time estimate reviewed before inference, then analyzes the
+completed workflow after Operate and Improve Approval so its updated forecast
+can use the complete governed delivery record.
 
 - **Inputs:** current project token and elapsed-time measurements, configured
   per-model planning rates and quality scores, model/routed-model identities,
@@ -1060,8 +1066,8 @@ Improve Approval so its forecast can use the complete governed delivery record.
   containing ownership, hosted UI/API/health/Swagger/OpenAPI links, source,
   pull request, deployment run, merge commit, stack, and governance context.
 - **Visual in-app documentation** with high-level architecture, human/agent
-  dataflow, Agent Framework patterns, twelve existing role diagrams, and
-  placeholders for the Code Review and Cost Estimator role diagrams.
+  dataflow, Agent Framework patterns, and role diagrams for all 14 agents,
+  including independent Code Review and Cost Estimation.
 - **Configurable agents** — model, APIM route, tools, MCP servers, guardrails,
   token limits, and approval requirements are all data-driven.
 - **APIM gateway layer** in front of Foundry with full audit logging.
@@ -1202,9 +1208,10 @@ edit, blocked run, publication, decision, and agent action is written to audit.
 
 ## Specialized agents
 
-Requirements · Planning · Architecture Advisor · Code Generation · Test
-Planning · Testing · Test Automation · Security & Compliance · DevOps / Release
-· Ops Monitoring · Knowledge Assistant · Insights. Each is
+Cost Estimator · Requirements · Planning · Architecture Advisor · Code
+Generation · Code Review · Test Planning · Testing · Test Automation · Security
+& Compliance · DevOps / Release · Ops Monitoring · Knowledge Assistant ·
+Insights. Each is
 configured in
 [`api/src/agents/config/agents.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/agents/config/agents.config.json)
 and editable in **Admin ▸ Agent Configuration**.

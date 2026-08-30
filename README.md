@@ -775,6 +775,8 @@ so the Foundry agent list sorts in the same order as the Agent Framework graph.
 Internal `agentId` values remain unprefixed, preserving workflow checkpoints,
 approval rules, audit records, and project configuration.
 
+![Microsoft Foundry project showing all 14 Agentic SDLC Prompt Agents running](docs/Agents/Foundry%20Agents.png)
+
 The diagrams below are the current role cards for all 14 agents. Each card
 explains the agent's position in the lifecycle, the approved context and Systems
 of Record it consumes, the proposal or evidence it produces, and the handoff to

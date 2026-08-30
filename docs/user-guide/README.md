@@ -2,13 +2,13 @@
 
 Production edition: August 2026
 
-This guide explains every user-facing screen in the Agentic SDLC Software Factory, the end-to-end Microsoft Agent Framework workflow, the three execution policies, and the generated assets published to Azure DevOps, GitHub, and Azure App Service.
+This guide explains every user-facing screen in the Agentic SDLC Software Factory, the end-to-end Microsoft Agent Framework workflow, the three execution policies, both code-generation providers, and the generated assets published to Azure DevOps, GitHub, and Azure App Service.
 
 Production application: [https://agentic-sdlc-ui-my.azurewebsites.net](https://agentic-sdlc-ui-my.azurewebsites.net)
 
 API health: [https://agentic-sdlc-api-my.azurewebsites.net/api/health](https://agentic-sdlc-api-my.azurewebsites.net/api/health)
 
-> Screenshots were captured from the deployed production application after release `ff74a1c`. GitHub and published-application images are native browser captures. Azure DevOps and Azure resource images labeled **Live generated evidence** were rendered from live REST responses because unattended browser access stopped at interactive Microsoft sign-in. No synthetic work-item, test, dashboard, wiki, repository, or resource counts are used in those evidence views.
+> Factory screenshots were captured from the deployed production UI at release `3fd8ff2`, backed by API release `29e8d09`. GitHub and published-application images are native browser captures. Azure DevOps and Azure resource images labeled **Live generated evidence** were rendered from live REST responses because unattended browser access stopped at interactive Microsoft sign-in. No synthetic work-item, test, dashboard, wiki, repository, or resource counts are used in those evidence views.
 
 ## Guide scope
 
@@ -29,7 +29,9 @@ The guide covers:
 
 ## Architecture and operating model
 
-The Software Factory separates people, experience, orchestration, model execution, persistence, and systems of record. The Angular/Ionic UI calls a FastAPI service. Microsoft Agent Framework owns the workflow graph, durable pause/resume, and agent sequencing. Every model call crosses Azure API Management before reaching the named Prompt Agent in Microsoft Foundry. Cosmos DB stores production workflow, approval, artifact, audit, project, user, notification, and checkpoint state.
+The Software Factory separates people, experience, orchestration, model execution, persistence, and systems of record. The Angular/Ionic UI calls a FastAPI service. Microsoft Agent Framework owns the workflow graph, durable pause/resume, and agent sequencing. Every Microsoft Foundry model call crosses Azure API Management before reaching the named Prompt Agent. Cosmos DB stores production workflow, approval, artifact, audit, project, user, notification, and checkpoint state.
+
+Microsoft Foundry is the default code-generation provider. A project can instead select GitHub Copilot, which delegates implementation to a GitHub-hosted coding agent in the provisioned repository. That hosted execution is the documented APIM exception; Factory task state, pull-request evidence, independent code review, approvals, and audit records remain governed by this application.
 
 <img src="images/00-architecture.png" alt="Agentic SDLC high-level architecture">
 
@@ -85,6 +87,7 @@ Default Settings asks only for:
 - Optional description.
 - Owner. The same value is saved as both Business Owner and IT Owner.
 - Workflow execution policy: Human Review, Minimal, or Autonomous.
+- Code-generation provider: Microsoft Foundry or GitHub Copilot.
 - Requirements text or an attached readable requirements document.
 - Optional supporting documents attached with the paperclip action.
 
@@ -94,44 +97,32 @@ If requirements are typed, the client creates a Markdown requirements document. 
 
 Select **Create & start workflow** only after name, owner, and requirements are present. The API provisions project systems, publishes intake documents, creates the durable workflow run, and starts eligible agents according to policy.
 
-### Custom - Step 1: Project details
+### Custom - Step 1: Project brief
 
-Custom exposes every project-level control. Step 1 separates Business Owner and IT Owner and lets the creator choose workflow execution explicitly.
+Custom exposes every project-level control in three steps. Project Brief captures name, description, separate Business and IT Owners, workflow execution policy, requirements, and supporting documents. Type requirements directly or attach a readable requirements file; architecture notes, technical constraints, mockups, images, presentations, and other evidence can be attached in the same composer. Each file is limited to 25 MB.
 
-<img src="images/04-new-project-custom-details.png" alt="New Project Custom details">
+<img src="images/04-new-project-custom-details.png" alt="New Project Custom project brief">
 
-### Custom - Step 2: Requirements and supporting documents
+### Custom - Step 2: Delivery connections
 
-Type requirements directly or attach a readable requirements file. Add architecture notes, technical constraints, mockups, images, presentations, or other supporting evidence with the same attachment action. Each file is limited to 25 MB.
+Delivery Connections combines the repository, environment, and Systems of Record controls. Override the inherited ADO organization/project, GitHub repository and visibility, or target environment only when this project needs a different destination. ADO visibility remains restricted to the organization-supported value.
 
-<img src="images/05-new-project-custom-requirements.png" alt="New Project Custom requirements">
+The five Systems of Record rows inherit global administration by default. Toggle **Override** only when Documentation, Work Items, Test Plans, Pipelines, or Source Code must use a different provider, URL, project, repository, or path.
 
-### Custom - Step 3: DevOps and repository
+<img src="images/06-new-project-custom-devops.png" alt="New Project Custom delivery connections and Systems of Record">
 
-This step overrides inherited ADO organization/project, GitHub repository, GitHub visibility, and target environment values. ADO visibility is connector-restricted to the organization-supported value.
+### Custom - Step 3: Agents and launch
 
-<img src="images/06-new-project-custom-devops.png" alt="New Project Custom DevOps and repository">
+All enabled lifecycle agents are selected by default. Clear an agent only when the project intentionally excludes that responsibility. Model dropdowns inherit global policy; a project override applies to future runs and revisions. Each choice shows input and output prices per 1M tokens. Successful deployments that cannot back a Foundry Prompt Agent remain visible but disabled with the compatibility reason.
 
-### Custom - Step 4: Systems of Record
+Choose the code-generation provider on this step:
 
-Global settings are inherited by default. Toggle an override only when this project must use a different provider, URL, project, repository, or path. Untouched rows continue to follow global administration.
+- **Microsoft Foundry** runs the Code Generation Agent through APIM and publishes its approved repository proposal.
+- **GitHub Copilot** creates a governed GitHub coding task, runs in GitHub's cloud, and returns the resulting pull request for independent review. Other lifecycle agents continue to use their configured Foundry models through APIM.
 
-<img src="images/07-new-project-custom-sor.png" alt="New Project Custom systems of record">
+The compact launch summary confirms ownership, intake, destinations, environment, execution policy, Systems of Record overrides, selected agents, models, and provider before **Create & start workflow** provisions anything.
 
-### Custom - Step 5: Lifecycle agents and models
-
-All enabled agents are selected by default. Clear an agent only when the project intentionally excludes that lifecycle responsibility. Model dropdowns inherit global model policy; a project override applies to future agent runs and revisions.
-Every choice includes its input and output price per 1M tokens in parentheses.
-Successful deployments that cannot back a Foundry Prompt Agent remain visible
-but disabled, together with the compatibility reason.
-
-<img src="images/07b-new-project-custom-agents.png" alt="New Project Custom lifecycle agents">
-
-### Custom - Step 6: Confirm and submit
-
-The confirmation screen summarizes ownership, intake, ADO/GitHub targets, environment, policy, system overrides, selected agents, and model overrides. **Create & start workflow** is the only action that provisions resources.
-
-<img src="images/07c-new-project-custom-confirm.png" alt="New Project Custom confirmation">
+<img src="images/07b-new-project-custom-agents.png" alt="New Project Custom agents, GitHub Copilot provider, and launch controls">
 
 ## Create a project set
 
@@ -139,7 +130,7 @@ Project sets create two to twenty independent projects with separate workflow ru
 
 ### Default Settings
 
-The streamlined set builder applies one owner and one execution policy to every project. Each project brief contains its own name, description, requirements text, and supporting attachments. Add or remove briefs before launch; at least two valid projects are required.
+The streamlined set builder applies one owner, execution policy, and code-generation provider to every project. Each project brief contains its own name, description, requirements text, and supporting attachments. Add or remove briefs before launch; at least two valid projects are required.
 
 <img src="images/26-new-project-set-default.png" alt="New Project Set Default Settings">
 
@@ -155,17 +146,11 @@ For manual intake, each project can override its name, description, owners, and 
 
 <img src="images/28-project-set-custom-intake.png" alt="Project Set Custom project intake">
 
-### Custom - Step 3: Shared and per-project agent policy
+### Custom - Step 3: Agents and launch
 
-Shared agent/model configuration applies across the set. A project can replace that policy without changing sibling projects. This enables one portfolio to compare models or exclude an agent for a specific project.
+Shared agent, model, and code-generation-provider configuration applies across the set. A project can replace that policy without changing sibling projects. This enables one portfolio to compare models, select Microsoft Foundry or GitHub Copilot, or exclude an agent for a specific project. The final review on the same step summarizes project count, shared policy, per-project overrides, and execution modes before one submission creates an independent durable run for every project.
 
 <img src="images/29-project-set-custom-agents.png" alt="Project Set Custom agent configuration">
-
-### Custom - Step 4: Confirm and launch
-
-Review project count, shared agents, model overrides, project execution policies, and launch mode. Each project receives its own durable run even though the set is submitted once.
-
-<img src="images/30-project-set-custom-confirm.png" alt="Project Set Custom confirmation">
 
 ## Project directories
 
@@ -243,7 +228,7 @@ The Fleet Inspection and Maintenance project shows the live full-review state. O
 
 The workflow panel shows ordered agent state, named Foundry identity, prerequisite, publication gate, last run, and whether each checkpoint is human or automated.
 
-<img src="images/32-human-agent-workflow.png" alt="Human Review 12-agent workflow">
+<img src="images/32-human-agent-workflow.png" alt="Human Review 14-agent workflow">
 
 The review workspace lets an approver include or exclude artifacts, edit proposal text, expand work-item trees, select exact rows, add/remove items, save drafts, approve and publish, request changes, reject, or delegate.
 
@@ -251,13 +236,15 @@ The review workspace lets an approver include or exclude artifacts, edit proposa
 
 ### Minimal
 
-Minimal policy pauses only at consequential checkpoints and automatically advances routine evidence gates. Field Service Work Orders is shown waiting at release after earlier routine checks advanced.
+Minimal policy pauses at the preflight estimate plus Backlog Generation, Architecture and Design, Pull Request Review, and Release and Deployment. Routine evidence gates normally advance automatically.
+
+The Semiconductor Stock Prices project uses Minimal policy with GitHub Copilot as its external code-generation provider. Its current production capture intentionally shows a post-output guardrail block: Minimal reduces approval clicks, but it never bypasses guardrails, evidence checks, authorization, or audit. An authorized operator can inspect the blocked run and retry automation after remediation.
 
 <img src="images/43-minimal-review-overview.png" alt="Minimal review project overview">
 
 <img src="images/44-minimal-agent-workflow.png" alt="Minimal review agent workflow">
 
-The same editing and evidence controls remain available at the human checkpoints retained by Minimal policy.
+The same editing and evidence controls remain available at retained human checkpoints and when a stopped automation run needs an authorized recovery decision.
 
 <img src="images/45-minimal-review-workspace.png" alt="Minimal review workspace">
 
@@ -273,7 +260,7 @@ Equipment Calibration Compliance demonstrates a completed autonomous run.
 
 All 14 agents complete in order; checkpoints are labeled automated rather than awaiting a human action.
 
-<img src="images/41-autonomous-agent-workflow.png" alt="Autonomous 12-agent workflow">
+<img src="images/41-autonomous-agent-workflow.png" alt="Autonomous 14-agent workflow">
 
 Completed projects can start a traceable revision from Requirements, Planning/Work Items, or Architecture. Revision instructions enter all downstream prompts; valid prior approvals are carried forward and a new run is created.
 
@@ -281,7 +268,11 @@ Completed projects can start a traceable revision from Requirements, Planning/Wo
 
 ## Project Details workspace
 
-Project Details is the primary project command center.
+Project Details is the primary project command center. The redesigned page keeps the project overview, model policy, revision controls, lifecycle, review workspace, provisioned systems, checkpoints, and evidence in one sequential view. Dense evidence sections start collapsed so the current workflow state stays prominent.
+
+### Overview, models, and revision
+
+Overview shows owners, environment, execution mode, code-generation provider, current stage, ADO project, GitHub repository, and visibility. **Agent models** expands only when a project-level override must be inspected or changed. A completed project also displays **Revise completed workflow**, which can restart from Requirements, Planning / Work Items, or Architecture while retaining published artifacts as the traceable baseline.
 
 ### Provisioned systems
 
@@ -289,33 +280,33 @@ This section links the ADO project and GitHub repository and surfaces provisioni
 
 <img src="images/34-provisioned-systems.png" alt="Provisioned systems of record">
 
-### Lifecycle
+### Lifecycle and agent workflow
 
-Lifecycle shows stage progression and the current run state from planning through improvement.
+The consolidated lifecycle shows all eight stage states and all 14 ordered agents in one panel. Each row includes the named identity, last run, proposal state, prerequisite, checkpoint type, and current action. Knowledge Assistant and Cost Estimator are advisory and therefore show an automated, no-publication-gate checkpoint.
 
 <img src="images/35-project-lifecycle.png" alt="Project lifecycle">
 
 ### Approval gates
 
-The gates section shows role, state, evidence ownership, decisions, comments, delegation, and prerequisites for all nine checkpoints.
+Approval Checkpoints keeps active decisions expanded and groups previous and future decisions compactly. It shows role, state, artifact count, comments, delegation, prerequisites, and available actions across all ten gates, including the preflight cost-and-time estimate.
 
 <img src="images/36-approval-gates.png" alt="Project approval gates">
 
 ### Systems of Record
 
-This section resolves each effective provider and indicates whether the value is inherited globally or overridden for the project.
+This collapsible section resolves each of the five effective providers and indicates whether the value is inherited globally or overridden for the project.
 
 <img src="images/37-project-sor.png" alt="Project Systems of Record">
 
 ### Generated assets
 
-Generated Assets groups links by system and category: ADO planning/test/release assets, GitHub repository/PR/commits/docs, Azure applications, and other published evidence.
+The collapsible Generated Assets section groups links by system and category: ADO planning/test/release assets, GitHub repository/PR/commits/docs, Azure applications, and other published evidence.
 
 <img src="images/38-generated-assets.png" alt="Generated assets">
 
 ### Agent runs and artifacts
 
-This trace view correlates each prompt agent, model, timing, outcome, proposal artifact, and verified tool call.
+The collapsible Agent Runs & Artifacts trace correlates each prompt agent, model, timing, token count, guardrail outcome, proposal artifact, and verified tool call.
 
 <img src="images/39-agent-runs-artifacts.png" alt="Agent runs and artifacts">
 
@@ -339,6 +330,20 @@ Agent Activity is the operational trace of model runs and outputs. Use it to ins
 
 <img src="images/12-agent-activity.png" alt="Agent Activity">
 
+### Project Cost and Usage
+
+Project Cost & Usage is the detailed FinOps ledger. It summarizes project count, tokens, and estimated USD cost, then breaks each project down by model, input/cached-input/output tokens, run count, and elapsed delivery time. The model-selection matrix compares configured price and quality scores and identifies the best-cost, best-quality, and balanced choices.
+
+Provider-reported usage is kept separate from estimated usage. GitHub-hosted Copilot code generation is identified as an externally billed, unmetered run and is not silently represented as Foundry token cost. Configured rates are planning estimates; provider billing exports remain authoritative.
+
+<img src="images/12b-project-cost-usage.png" alt="Project Cost and Usage ledger">
+
+### Project Cost Comparison
+
+Project Cost Comparison groups projects by Autonomous, Minimal, and Human Review execution policy. Expand a group to compare total estimated cost, consumed tokens, and start-to-finish time, including governed approval waits, with group averages shown in the header.
+
+<img src="images/12c-project-cost-comparison.png" alt="Project Cost Comparison">
+
 ### Model Suggestions and Pricing
 
 Model Suggestions & Pricing lists the recommended deployment and rationale for
@@ -346,6 +351,8 @@ each lifecycle agent. Its pricing matrix shows normalized input, cached-input,
 and output rates per 1M tokens, quality score, and whether a rate came from Azure
 Retail Prices or the configured fallback policy. Azure billing exports remain
 the authoritative charge record.
+
+<img src="images/12d-model-suggestions-pricing.png" alt="Model Suggestions and Pricing">
 
 ### Audit Trail
 
@@ -513,7 +520,7 @@ Role Permissions displays the effective capability matrix, immutable App Owner p
 
 ### Agent Configuration
 
-Agent Configuration controls enabled state, model, temperature, input/output limits, tools, MCP servers, approval behavior, and guardrails for the 12 configured roles. Foundry base identities use ordered `010-` through `120-` names.
+Agent Configuration controls enabled state, model, temperature, input/output limits, tools, MCP servers, approval behavior, and guardrails for all 14 configured roles. Foundry base identities use ordered `010-` through `130-` names, including the independent `045-code-review-agent` and final `130-cost-estimator-agent`.
 
 <img src="images/17-agent-configuration.png" alt="Agent Configuration">
 
@@ -525,7 +532,7 @@ Global Settings manages model policy and system-of-record defaults inherited by 
 
 ### APIM and Configuration
 
-APIM & Configuration presents sanitized runtime configuration and connector readiness without exposing secrets. All model execution remains behind the configured APIM gateway.
+APIM & Configuration presents sanitized runtime configuration and connector readiness without exposing secrets. All Microsoft Foundry model execution remains behind the configured APIM gateway; GitHub-hosted Copilot generation is the explicit external-provider exception described above.
 
 <img src="images/19-apim-configuration.png" alt="APIM and Configuration">
 
@@ -547,21 +554,25 @@ Architecture explains UI, API, persistence, Agent Framework, APIM, Foundry, and 
 
 ### Human-in-the-loop
 
-This topic explains all nine gates and policy-dependent accountability.
+This topic explains all ten gates and policy-dependent accountability.
 
 <img src="images/22-docs-hitl.png" alt="In-app HITL documentation">
 
 ### Agent responsibilities
 
-Agent Responsibilities describes all 12 roles, stages, human owners, checkpoints, and outputs.
-
-<img src="images/23-docs-agents.png" alt="In-app agent documentation">
+Agent Responsibilities describes all 14 roles, stages, human owners, checkpoints, and outputs, including provider-neutral Code Review and the final advisory Cost Estimator.
 
 ### Security and guardrails
 
 Security & Guardrails explains identity, least privilege, secret handling, pre/post model checks, correlation, and audit.
 
 <img src="images/24-docs-security.png" alt="In-app security documentation">
+
+### Cost, usage, and model governance
+
+Cost, Usage & Model Governance explains measured versus estimated tokens, persisted project statistics, external unmetered runs, comparison views, configured pricing, and how the Cost Estimator recommends future model portfolios.
+
+<img src="images/25-docs-cost-governance.png" alt="In-app cost and model governance documentation">
 
 ## End-to-end operating flow
 
@@ -571,12 +582,14 @@ Security & Guardrails explains identity, least privilege, secret handling, pre/p
 4. Requirements and Planning agents produce scope and backlog proposals.
 5. Policy or a human gate publishes reviewed work items, sprints, queries, dashboards, and delivery plan to ADO.
 6. Architecture produces solution, data, API, security, and implementation decisions and publishes approved documentation.
-7. Code Generation creates the complete GitHub repository on an agent branch and opens a pull request.
-8. Test Planning, Testing, and Test Automation create ADO test assets and verify exact-commit CI evidence.
-9. Security and Compliance validates findings and residual risk before release.
-10. DevOps / Release configures GitHub OIDC, provisions Azure App Services, verifies/merges the persisted PR, dispatches one deployment, runs smoke tests, updates README links, closes related work items, and publishes the ADO wiki.
-11. Ops Monitoring, Knowledge Assistant, and Insights produce operating and improvement evidence.
-12. The run completes, audit remains queryable, owners receive completion notification, and a later revision can restart from an earlier stage.
+7. Code Generation either invokes its Foundry Prompt Agent through APIM or delegates to the selected GitHub Copilot cloud agent, then records the governed branch, task, and pull-request evidence.
+8. Code Review independently evaluates the pull request with a model distinct from the Foundry generator, or provider-neutral review when Copilot generated the code.
+9. Test Planning, Testing, and Test Automation create ADO test assets and verify exact-commit CI evidence.
+10. Security and Compliance validates findings and residual risk before release.
+11. DevOps / Release configures GitHub OIDC, provisions Azure App Services, verifies/merges the persisted PR, dispatches one deployment, runs smoke tests, updates README links, closes related work items, and publishes the ADO wiki.
+12. Ops Monitoring, Knowledge Assistant, and Insights produce operating and improvement evidence.
+13. Cost Estimator runs as the final advisory agent after Operate and Improve, combining measured usage, configured prices, and completed-project history into best-cost, best-quality, and balanced recommendations.
+14. The run completes, durable cost statistics and audit remain queryable, owners receive completion notification, and a later revision can restart from an earlier stage.
 
 ## Screen index
 
@@ -592,6 +605,9 @@ Security & Guardrails explains identity, least privilege, secret handling, pre/p
 | Workflow Runs | `/workflow-runs` | Operational screens |
 | Human Approval Queue | `/approvals` | Operational screens |
 | Agent Activity | `/agent-activity` | Operational screens |
+| Project Cost & Usage | `/project-costs` | Operational screens |
+| Project Cost Comparison | `/project-cost-comparison` | Operational screens |
+| Model Suggestions & Pricing | `/models-and-pricing` | Operational screens |
 | Audit Trail | `/audit` | Operational screens |
 | User Management | `/admin/users` | Administration |
 | Project Access | `/admin/project-access` | Administration |
@@ -604,11 +620,13 @@ Security & Guardrails explains identity, least privilege, secret handling, pre/p
 | HITL documentation | `/docs/hitl` | In-app documentation |
 | Agent Responsibilities | `/docs/agents` | In-app documentation |
 | Security & Guardrails | `/docs/security` | In-app documentation |
+| Cost, Usage & Model Governance | `/docs/costs` | In-app documentation |
 
 ## Troubleshooting
 
 - **A project is waiting:** Open Project Details and inspect the first Awaiting Approval gate, missing evidence message, or failed automation banner.
 - **An agent cannot run:** Confirm its prerequisite gate, selected-agent policy, model availability, APIM path, and circuit-breaker state.
+- **GitHub Copilot generation is not in Foundry token totals:** Copilot runs in GitHub's cloud and is reported as externally billed/unmetered. Check GitHub billing for that execution; the Factory still records its task, pull request, review, approvals, and audit evidence.
 - **ADO or GitHub publication failed:** Open Generated Assets, Agent Runs & Artifacts, and Audit Trail for the exact connector error and correlation ID.
 - **A project has no description:** New intake derives two or three sentences from readable functional requirements when the description is blank.
 - **GitHub access should be skipped:** Leave GitHub username blank in Project Access. Do not enter a placeholder value.

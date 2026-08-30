@@ -99,8 +99,8 @@ after each prerequisite is explicitly approved by a reviewer or by the selected
 automation policy ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
 
 **4 · Agents call Systems of Record via MCP servers & APIs (bottom).** Agents
-never own data. Each integration is a governed connector: Azure DevOps (work
-items; test cases & plans), Azure DevOps / GitHub Actions (pipelines &
+never own data. Each integration is a governed connector: Azure DevOps or Jira
+(work items; test cases & plans), Azure DevOps / GitHub Actions (pipelines &
 automations), GitHub (source control and documentation), GitHub Copilot
 (coding assistant), Microsoft Azure (App Services, Functions, Containers,
 Key Vault, Monitor), and Azure Communication Services Email (owner lifecycle
@@ -198,12 +198,13 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **Approval, revision, and accountability controls:** reviewers can save drafts, approve and publish selected content, request changes with a required comment, reject, or delegate. A change request automatically re-prompts the owning agent. Every decision records the actor, role, timestamp, comments, selected artifacts, and state transition.
 - **14 specialized Microsoft Foundry Prompt Agents:** Requirements, Planning, Architecture, Code Generation, Code Review, Test Planning, Testing, Test Automation, Security and Compliance, DevOps/Release, Ops Monitoring, Knowledge Assistant, Insights, and Cost Estimator are nodes in one sequential Microsoft Agent Framework graph and execute through Azure API Management.
 - **Independent code review:** Code Review follows approved code generation and uses a different model deployment. It reviews the resulting pull request whether Foundry or GitHub Copilot generated it, reducing correlated generator/reviewer failure before Pull Request Review approval.
-- **Durable FinOps evidence:** Foundry input, cached-input, output, and total tokens are attributed to projects and models. Final statistics preserve estimated USD cost, model mix, elapsed time, and per-model breakdown for future Cost Estimator forecasts.
+- **Durable FinOps and ROI evidence:** Foundry input, cached-input, output, and total tokens are attributed to projects and models. Before creation and throughout delivery, the platform compares Autonomous, Minimal review, Human review, and a totally manual AI-orchestration baseline using explicit labor assumptions. Final statistics preserve model spend, all-in project cost, human hours and dollars saved, ROI, model mix, elapsed time, and per-model breakdown for future Cost Estimator forecasts.
 - **Live Foundry model selection and pricing:** Global Settings discovers every successful deployment from the configured Foundry account. Agent-compatible models are selectable; embedding, image, and other incompatible deployments remain visible with a disabled state and explanation. Every model dropdown includes input/output price per 1M tokens. The Model Suggestions & Pricing page lists per-agent recommendations, quality scores, cached-input rates, source, and effective pricing.
 - **Ten evidence-aware approval gates:** Cost and Time Estimate, Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Human and Minimal modes require approval of the generated preflight estimate before any agent invocation; Autonomous validates its attached estimate artifact and records an automated decision.
 - **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
 - **Parallel project sets:** one wizard creates `2–20` projects, defaults each to Fully autonomous execution, applies one shared agent/model policy, and allows a project to replace that policy without changing its siblings. Manual intake and validated folder-per-project ZIP import both create independent workflow runs, which advance concurrently with isolated checkpoints, approvals, audit records, and systems of record.
 - **Rich Azure DevOps planning automation:** approved Planning output creates an idempotent Epic-to-Task hierarchy plus dated sprints, shared queries, dashboards, delivery plans, estimates, tags, priorities, business value, and acceptance criteria. Generated work items are displayed as a parent/child tree, collapsed by default.
+- **Jira-native work and test evidence:** selecting Jira for Work Items or Test Cases & Test Plans automatically uses `https://csdmichael.atlassian.net/jira/software/projects` as the asset root. Project links resolve under `/jira/software/projects/{PROJECT_KEY}`, while individual issues, test plans, and test cases use `/browse/{ISSUE_KEY}` without duplicated `browse` segments.
 - **Code-to-work-item traceability:** when Code Generation publishes its branch and pull request, every related Epic, Feature, User Story, and Task moves to **Active**, receives commit/PR hyperlinks, and records an Agentic SDLC discussion entry. After the matching Azure deployment succeeds, the same hierarchy moves to **Closed** with the deployment-run link and completion comment.
 - **Architecture and code governance:** architecture, dataflow, API contracts, security design, generated application structure, tests, and CI/CD remain editable and selectable before publication. Generated code is proposed on a branch and reviewed through a real GitHub pull request; GitHub evidence is grouped into Repository, Pull requests, Commits, and Documentation.
 - **Verified quality and security evidence:** test planning creates idempotent ADO plans, suites, and cases. Testing and Test Automation reuse the generated CI workflow, create plan-linked automated Test Runs, update ADO result outcomes, mark Test Cases automated, and attach pipeline hyperlinks/discussion evidence. Security and Compliance produces prioritized findings, mitigations, residual risk, and a release recommendation.
@@ -323,6 +324,12 @@ progress rather than human approval states. Automated transitions are labelled
 as workflow-policy advances, and a finished card is labelled **Complete**. Each
 card also exposes the latest trace event and its chronological external evidence.
 
+The fourth option shown in cost and ROI comparisons, **Totally manual
+orchestration using AI**, is a planning baseline rather than a selectable
+workflow policy. It models a person manually coordinating the same AI-assisted
+lifecycle work so the three executable policies can be compared on a consistent
+labor and model-cost basis.
+
 ---
 
 ## Live deployment
@@ -368,13 +375,15 @@ Request access from **Michael Yaacoub** to view or clone the repository.
 
 ## Systems of Record — root URLs
 
-These are the two **root** systems of record the Agentic SDLC writes into.
-Every new project gets its own project / repository underneath them, and every
-agent action lands in one of these two places.
+These are the configured **root** systems of record the Agentic SDLC can write
+into. Every new project gets its own project or repository underneath the
+applicable root, and each agent action lands in the provider selected for that
+asset class.
 
 | System of Record | Purpose | Root URL |
 | --- | --- | --- |
 | **Azure DevOps** — work items, test plans, pipelines | Epics → Features → User Stories → Tasks, test plans and cases, build/release pipelines. One project per SDLC project. | <https://dev.azure.com/csdmichael> |
+| **Jira Software** — work items and test assets | Optional provider for Work Items and Test Cases & Test Plans. Project navigation uses `/jira/software/projects/{PROJECT_KEY}`; individual issues use `/browse/{ISSUE_KEY}`. | <https://csdmichael.atlassian.net/jira/software/projects> |
 | **GitHub** — source code and documentation | Generated code, branches, pull requests, uploaded intake documents, and published requirements/design artifacts. One repository per SDLC project. | <https://github.com/csdmichael> |
 
 ### Project intake documents
@@ -424,6 +433,8 @@ real, versioned, reviewable URL.
 | System | Child artifact | Example |
 | --- | --- | --- |
 | Azure DevOps | `<org>/<project name>` | `https://dev.azure.com/csdmichael/Contoso%20Claims%20Portal` |
+| Jira Software (when selected) | `/jira/software/projects/<project key>` | `https://csdmichael.atlassian.net/jira/software/projects/CONTOSO` |
+| Jira issue/test asset | `/browse/<issue key>` | `https://csdmichael.atlassian.net/browse/CONTOSO-100` |
 | GitHub | `<owner>/<project-slug>` | `https://github.com/csdmichael/contoso-claims-portal` |
 
 The roots are configuration, not code — they live in
@@ -453,7 +464,7 @@ the application or provisioning workflow.
 
 | Data element | What is stored | Production destination / partition | External or derived destination |
 | --- | --- | --- | --- |
-| Project configuration | Name, owners, environment, execution mode, selected agents, per-project `agentModels` overrides, technology stack, System of Record overrides, provisioning references, and captured Azure resource IDs | Cosmos `agentic_sdlc/state`, `_collection = projects` | ADO/GitHub URLs and Azure ARM IDs point to the external resources; they are not copies of those resources |
+| Project configuration | Name, owners, environment, execution mode, selected agents, per-project `agentModels` overrides, technology stack, System of Record overrides, provisioning references, and captured Azure resource IDs | Cosmos `agentic_sdlc/state`, `_collection = projects` | ADO/Jira/GitHub URLs and Azure ARM IDs point to the external resources; they are not copies of those resources |
 | Global model policy | One model deployment per agent when an administrator overrides the checked-in defaults | Cosmos `agentic_sdlc/state`, `_collection = settings`, record `global-agent-models` | Baseline recommendations remain in `api/src/agents/config/agents.config.json`; deployed model and agent definitions live in Microsoft Foundry |
 | Effective model used by an agent | Selected deployment, selection scope, Foundry agent name, routed model returned by Model Router, token estimate, and correlation ID | Cosmos `agentic_sdlc/state`, `_collection = agentRuns` | Foundry owns the Prompt Agent/version; Application Insights owns model-call telemetry |
 | Project sets | Set name, member project/run IDs, launch errors, counts, creator, and timestamps | Cosmos `agentic_sdlc/state`, `_collection = projectSets` | Each member project has independent records in the collections below |
@@ -462,17 +473,17 @@ the application or provisioning workflow.
 | Foundry circuit-breaker state | Failure count, open/closed state, retry epoch, and last model error | Cosmos `agentic_sdlc/state`, `_collection = workflowCircuitBreakers` | Controls when the API may next invoke a Foundry agent through APIM |
 | Agent Framework checkpoints | Encoded executor state and pending request/response checkpoints | Cosmos `agentic_sdlc/state`, `_collection = workflowCheckpoints` | Microsoft Agent Framework loads these documents to resume the same topology |
 | Approval gates and decisions | Gate requirements, state, attached artifacts, approver, role, decision, comments, delegation, selected references, and timestamps | Cosmos `agentic_sdlc/state`, `_collection = approvalGates` | Approved publication creates or updates the governed external record |
-| Agent execution records | Agent/model identity, prompt ID, state, output IDs, guardrail findings, summary, tool calls, external evidence URLs, and timing | Cosmos `agentic_sdlc/state`, `_collection = agentRuns` | Full model telemetry is sent to Application Insights; generated external evidence remains in ADO/GitHub/Azure |
-| Reviewable agent artifacts | Full redacted proposal content, editable review items, version, review status, owning gate/agent, and publication metadata | Cosmos `agentic_sdlc/state`, `_collection = artifacts` | Approved documents, code, and work items are published to the configured GitHub or ADO destination |
+| Agent execution records | Agent/model identity, prompt ID, state, output IDs, guardrail findings, summary, tool calls, external evidence URLs, and timing | Cosmos `agentic_sdlc/state`, `_collection = agentRuns` | Full model telemetry is sent to Application Insights; generated external evidence remains in ADO/Jira/GitHub/Azure |
+| Reviewable agent artifacts | Full redacted proposal content, editable review items, version, review status, owning gate/agent, and publication metadata | Cosmos `agentic_sdlc/state`, `_collection = artifacts` | Approved documents, code, and work items are published to the configured GitHub, ADO, or Jira destination |
 | Intake documents | Extracted text and document metadata used as grounded agent context | Cosmos `agentic_sdlc/state`, `_collection = intakeDocuments` | Original uploads are versioned in the project's GitHub repository under `docs/intake/`; binaries are not duplicated in Cosmos |
-| Per-project UI trace | Project creation/provisioning, artifact, agent, approval, ADO, GitHub, CI, Azure, and completion events | No standalone trace collection: `workflowTrace` is computed on read from `projects`, `workflowRuns`, `agentRuns.toolCalls`, `artifacts`, and `approvalGates` | Linked evidence remains in ADO, GitHub Actions, GitHub, and Azure |
+| Per-project UI trace | Project creation/provisioning, artifact, agent, approval, ADO, Jira, GitHub, CI, Azure, and completion events | No standalone trace collection: `workflowTrace` is computed on read from `projects`, `workflowRuns`, `agentRuns.toolCalls`, `artifacts`, and `approvalGates` | Linked evidence remains in ADO, Jira, GitHub Actions, GitHub, and Azure |
 | Application and Foundry telemetry | Request/dependency spans, model invocation traces, latency, result status, and correlation attributes | Azure Application Insights `appInsights-ai-poc-myaacoub` | Filter by the `agentic-sdlc` Foundry project ID or response/conversation ID |
 | Audit and deleted-project history | Append-only user, agent, policy, notification, approval, publication, and deletion events with correlation IDs | Cosmos `agentic_sdlc/state`, `_collection = auditLogs` | **Deleted Projects** is a sanitized API/UI projection of `project.delete` audit entries, not a restorable project table |
 | Owner notification ledger | Event key, project/run/gate IDs, unique recipient list, subject, attempt count, and `Pending`/`Delivered`/`Failed`/`Skipped` status | Cosmos `agentic_sdlc/state`, `_collection = projectNotifications` | Azure Communication Services Email performs delivery; email failure never changes workflow outcome |
 | Project deletion operations | Cascade selections, current phase/message, percentage, ordered resource trace events, terminal result/error, requester, and timestamps | Cosmos `agentic_sdlc/state`, `_collection = projectDeletions` | The completed operation survives project removal and feeds the animated deletion dialog; `project.delete` remains in the append-only audit partition |
 | Users and authentication method | User identity, role, provider, enabled state, and profile metadata | Cosmos `agentic_sdlc/state`, `_collection = users` | Entra remains the identity source for internal users; OTP-backed users receive an application JWT |
 | Global System of Record and role overrides | Admin-saved SOR provider/URL choices and the editable role-permission matrix | Cosmos `agentic_sdlc/state`, `_collection = settings` | Checked-in JSON config supplies defaults and locked permission invariants |
-| Source, planning, test, and release records | Intake binaries, generated source/docs, commits, pull requests, work items, sprints, queries, dashboards, test plans/runs, and wiki | GitHub and Azure DevOps are the authoritative external Systems of Record | Local records retain canonical IDs/URLs and enough metadata to render trace evidence |
+| Source, planning, test, and release records | Intake binaries, generated source/docs, commits, pull requests, work items, sprints, queries, dashboards, test plans/runs, and wiki | GitHub, Azure DevOps, and Jira are the authoritative external Systems of Record selected per asset class | Local records retain canonical IDs/URLs and enough metadata to render trace evidence |
 | Provisioned runtime resources | App Service plans/apps and their live runtime state | Azure Resource Manager | Created resource IDs and ownership flags are captured in Cosmos project and release-agent records for safe cascade deletion |
 
 Secrets are not stored in these collections. PATs, ACS credentials, JWT signing
@@ -713,6 +724,52 @@ That configuration also holds a quality score used by the recommendation
 matrix. These values support forecasting and portfolio decisions; provider
 invoices and Azure billing exports remain authoritative.
 
+### Orchestration ROI methodology
+
+The New Project page calls `POST /api/project-statistics/estimate` for a
+non-persisting estimate before project creation. The resulting comparison is
+also embedded in the Cost and Time Estimate approval artifact. Each estimate
+evaluates four options:
+
+| Option | Human-effort ratio | Role in the product |
+| --- | ---: | --- |
+| Autonomous SDLC | 5% | Selectable execution policy |
+| Minimal human review | 15% | Selectable execution policy |
+| Human review at every stage | 40% | Selectable execution policy |
+| Totally manual orchestration using AI | 100% | Comparison baseline only |
+
+The checked-in methodology version is **2026-08-30**. Its assumptions are **8
+manual hours per selected lifecycle agent** and **USD 100 per loaded labor
+hour**. Let $A$ be the number of selected lifecycle agents, $M$ the estimated
+or measured AI model cost, $R$ the option's
+human-effort ratio, and $H = 8A$ the manual baseline hours. The platform
+calculates:
+
+- human hours: $H_R = H \times R$;
+- labor cost: $L_R = 100 \times H_R$;
+- all-in project cost: $C_R = M + L_R$;
+- hours saved: $H - H_R$;
+- dollars saved: $C_{manual} - C_R$;
+- cost savings: $(C_{manual} - C_R) / C_{manual}$; and
+- ROI: $(C_{manual} - C_R) / C_R$.
+
+The same AI model cost is deliberately held constant across all four options so
+the comparison isolates orchestration labor. For example, with 10 lifecycle
+agents and USD 2 of model cost:
+
+| Option | Human hours | All-in project cost | Hours saved vs manual | Dollars saved vs manual |
+| --- | ---: | ---: | ---: | ---: |
+| Autonomous SDLC | 4 | USD 402 | 76 | USD 7,600 |
+| Minimal human review | 12 | USD 1,202 | 68 | USD 6,800 |
+| Human review at every stage | 32 | USD 3,202 | 48 | USD 4,800 |
+| Totally manual orchestration using AI | 80 | USD 8,002 | 0 | USD 0 |
+
+These are configurable planning assumptions, not time-sheet measurements or a
+promise of realized savings. Actual staffing, rework, governance, licensing,
+infrastructure, support, external-provider charges, and organizational overhead
+can change the result. Azure billing exports, provider invoices, and recorded
+labor remain authoritative.
+
 The **Model Suggestions & Pricing** page shows the recommended deployment and
 rationale for every lifecycle agent alongside input, cached-input, and output
 prices per 1M tokens, quality score, and whether each rate came from Azure retail
@@ -729,6 +786,8 @@ After the complete workflow finishes, the API writes one durable
 - total tokens and estimated total USD cost;
 - every model used and a per-model input/cached/output/total-token and cost breakdown;
 - per-agent duration, model, token, and cost details;
+- all four labor/model cost options, selected-policy human hours, hours and
+  dollars saved versus manual AI orchestration, and ROI assumptions;
 - the current best-cost, best-quality, and balanced model-selection matrix.
 
 Revisions update the project's cumulative statistics after their new workflow
@@ -736,14 +795,24 @@ finishes. In-progress projects are calculated on read, while completed projects
 reuse the persisted snapshot. The Cost Estimator Agent receives the current
 snapshot and recent completed-project summaries, allowing future estimates to
 learn from actual project shape rather than static token limits alone.
+Historical statistics written before ROI was introduced are enriched at read
+time from the project's selected agents, execution policy, and saved model cost;
+no persistence migration is required.
 
 ### Cost and comparison screens
 
-- **Project Cost & Usage** lists every project by tokens, estimated dollar
-  amount, models used, state, and start-to-finish time. Selecting a project opens
-  its per-model ledger and recommendation matrix.
-- **Project Cost Comparison** renders three bar-chart groups: total estimated
-  cost, total consumed tokens, and elapsed delivery time.
+- **New Project** shows model cost, selected-option all-in cost, hours and
+  dollars saved, and the complete four-option table before creation. Changing
+  the execution policy, selected agents, models, or code-generation provider
+  refreshes the estimate.
+- **Project Cost & Usage** lists every project by tokens, model cost,
+  selected-option all-in cost, hours and dollars saved, models used, state, and
+  start-to-finish time. Selecting a project opens the four-option ROI table,
+  assumptions, per-model ledger, and recommendation matrix.
+- **Project Cost Comparison** groups projects by executable workflow policy and
+  compares Autonomous, Minimal review, Human review, and Manual AI all-in costs
+  alongside selected-policy hours and dollar savings. Existing model-cost,
+  token, and elapsed-time charts remain available.
 
 GitHub Copilot cloud-agent model calls run outside this application's APIM and
 do not currently return token/billing usage to this API. Such runs are labelled
@@ -1020,6 +1089,7 @@ can use the complete governed delivery record.
   per-model planning rates and quality scores, model/routed-model identities,
   externally unmetered indicators, and recent completed-project statistics.
 - **Outputs:** forecast token consumption and estimated USD total, assumptions,
+  four-option all-in project cost and ROI, human hours and dollars saved,
   per-model cost observations, and an agent-by-model update matrix for lowest
   cost, highest quality, and balanced cost/quality.
 
@@ -1030,7 +1100,8 @@ can use the complete governed delivery record.
 - Microsoft **Entra ID** + **email OTP** authentication.
 - **New Project** wizard: intake with requirements, technical requirements, and
   UX mockup documents uploaded from disk, ADO & GitHub targets, environment,
-  agent selection, and one of three execution policies.
+  agent selection, one of three execution policies, and a pre-creation
+  four-option cost/ROI comparison.
 - **New Project Set** wizard: manual multi-project intake or ZIP folder import,
   shared agent/model configuration with per-project overrides, autonomous
   defaults, and bounded parallel workflow launch. Existing Projects groups the
@@ -1073,9 +1144,12 @@ can use the complete governed delivery record.
 - **Configurable agents** — model, APIM route, tools, MCP servers, guardrails,
   token limits, and approval requirements are all data-driven.
 - **APIM gateway layer** in front of Foundry with full audit logging.
-- **Mock-safe and live connectors** for ADO, GitHub, test automation, local
+- **Mock-safe and live connectors** for ADO, Jira, GitHub, test automation, local
   document upload, Foundry/APIM, and Azure provisioning.
 - **Audit trail** for every user, agent, and approval action.
+- **Portfolio cost and ROI reporting** with all-in project cost, configurable
+  labor assumptions, human hours saved, dollar savings, and comparisons against
+  totally manual AI orchestration.
 - App Owner **user management** (roles + authentication method).
 
 ## Technology stack
@@ -1223,12 +1297,13 @@ Configured governed destinations:
 
 - Requirements assets: the `docs/` folder of the project's own GitHub
   repository, alongside the documents uploaded at intake.
-- Planning output: an Azure DevOps project in `https://dev.azure.com/csdmichael`
-  with Epic → Feature → User Story → Task hierarchy.
+- Planning output: Azure DevOps or Jira, according to the project's Work Items
+  selection, with an Epic → Feature → User Story → Task hierarchy.
 - Coding output: a repository in the `csdmichael` GitHub account; generated
   output is committed but never auto-merged.
-- Test planning and execution: Azure Test Plans/test cases, then Azure Pipelines
-  or GitHub Actions according to `testAutomation.defaultRunner`.
+- Test planning and execution: Azure Test Plans/test cases or Jira test assets,
+  according to the Test Cases & Test Plans selection, then the supported
+  automation runner.
 
 ## Systems of Record configuration
 
@@ -1239,8 +1314,8 @@ in [Systems of Record — root URLs](#systems-of-record--root-urls).
 | System of Record | Default | Alternatives |
 | --- | --- | --- |
 | Documentation | GitHub `docs/` folder in the project repository | Azure DevOps Wiki, GitHub Wiki |
-| Work Items Tracking | <https://dev.azure.com/csdmichael> | GitHub Issues |
-| Test Cases & Test Plans Tracking | <https://dev.azure.com/csdmichael> | GitHub Issues |
+| Work Items Tracking | <https://dev.azure.com/csdmichael> | Jira at <https://csdmichael.atlassian.net/jira/software/projects>, GitHub Issues |
+| Test Cases & Test Plans Tracking | <https://dev.azure.com/csdmichael> | Jira at <https://csdmichael.atlassian.net/jira/software/projects>, GitHub Issues |
 | Code Build / Pipelines | <https://dev.azure.com/csdmichael> | GitHub Actions |
 | Source Code Org | <https://github.com/csdmichael> | Azure Repos |
 
@@ -1257,6 +1332,15 @@ Resolution order is `config default → global override → project override`. T
 API rejects unknown keys, unsupported providers, and non-`https://` URLs, and
 audits every settings change.
 
+For Work Items and Test Cases & Test Plans, choosing **Jira** immediately sets
+the row URL to the canonical projects root
+`https://csdmichael.atlassian.net/jira/software/projects`. The API applies the
+same provider-specific default while validating global settings, project
+overrides, and inherited historical records, so a stale Azure DevOps URL cannot
+survive a provider change. Generated project links append the Jira project key;
+issue, test-plan, and test-case links use the site-level `/browse/{ISSUE_KEY}`
+route.
+
 ## System of record provisioning & REST wrappers
 
 Creating a project in the UI stands up its real homes before the first agent
@@ -1266,6 +1350,10 @@ runs:
 | --- | --- | --- |
 | Azure DevOps | A project (Agile process, Git) | <https://dev.azure.com/csdmichael> |
 | GitHub | A repository, plus the intake uploads under `docs/intake/` | <https://github.com/csdmichael> |
+
+Jira is created or reused on demand when an approved Planning or Test Planning
+artifact is published and the corresponding project asset class selects Jira.
+It is not part of the initial Azure DevOps/GitHub intake provisioning pair.
 
 ### Naming
 
@@ -1296,10 +1384,11 @@ provisioning** (or `POST /api/projects/{id}/provision`) re-runs it once the
 missing credential is in place. Toggle any of them in
 `integrations.config.json` → `provisionOnProjectCreate`.
 
-As the workflow proceeds, the approved agent output goes to the same targets:
+As the workflow proceeds, approved agent output goes to the selected targets:
 the Planning Agent creates a real linked Epic → Feature → User Story → Task
-hierarchy in the project's ADO backlog, and the Code Generation Agent creates a
-branch, commits its output, and opens a pull request — never a merge.
+hierarchy in the project's ADO backlog or Jira project, and the Code Generation
+Agent creates a branch, commits its output, and opens a pull request — never a
+merge.
 
 After release publication, the DevOps / Release Agent ensures a project wiki
 and creates or updates `/Project-Overview` with the project description,
@@ -1413,8 +1502,9 @@ Copy [`api/.env.example`](https://github.com/csdmichael/Foundry-Agentic-Workflow
 | `FOUNDRY_ALLOW_DIRECT` | `1` allows direct Foundry calls (LOCAL DEV ONLY) |
 | `FOUNDRY_MODEL_MANAGEMENT_LIVE` | `1` enables live deployment discovery and project-scoped Prompt Agent version management; inference still uses APIM |
 | `ADO_PAT` | Azure DevOps project, work item, test plan, and pipeline permissions |
+| `JIRA_EMAIL` / `JIRA_API_TOKEN` | Jira Cloud Basic authentication for project, issue, test-plan, and test-case operations |
 | `GITHUB_PAT` | GitHub repository and Actions permissions |
-| `ADO_LIVE` / `GITHUB_LIVE` | `1` flips that connector out of mock mode |
+| `ADO_LIVE` / `JIRA_LIVE` / `GITHUB_LIVE` | `1` flips that connector out of mock mode |
 
 Use [`scripts/set-connector-secrets.ps1`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/scripts/set-connector-secrets.ps1) to
 capture PATs with masked input and write them straight to the App Service
@@ -1456,6 +1546,9 @@ provide credentials to switch from the mock to the live implementation.
   Without a PAT the connector falls back to an Entra ID token for the Azure
   DevOps resource, which only works when the organization is backed by the same
   tenant.
+- **Jira**: set `JIRA_EMAIL` and `JIRA_API_TOKEN`, confirm `projectsUrl` is
+  <https://csdmichael.atlassian.net/jira/software/projects>, and set
+  `jira.useMock` to `false` or `JIRA_LIVE=1`.
 - **GitHub**: set `GITHUB_PAT` (`repo` + `workflow`) for
   <https://github.com/csdmichael>. `github.accountType` is auto-detected, so both
   user accounts and organizations work.
@@ -1560,9 +1653,10 @@ npm test -- --no-watch --browsers=ChromeHeadless
 npm run build
 ```
 
-Current validated baseline: **212 API tests** and **57 Angular tests**, followed
+Current validated baseline: **259 API tests** and **91 Angular tests**, followed
 by a successful production bundle. Focused coverage includes all three workflow
-modes, persisted retry/circuit behavior, refusal recovery, connector
+modes, the four-option ROI calculations and pre-creation endpoint, canonical
+Jira project/issue links, persisted retry/circuit behavior, refusal recovery, connector
 idempotency, project deletion history, owner-recipient deduplication, one email
 per approval/completion event, repeated genuine failure notification, and
 creation rollback without a false notification.
@@ -1644,7 +1738,7 @@ workflow topology or the APIM model-execution boundary.
 | Priority | Future work | Proposed approach | Scale / acceptance signal |
 | --- | --- | --- | --- |
 | P1 | **Multi-agent teams per SDLC role** to optimize delivery speed, quality, and cost | Start with **two producer agents plus one reviewer** for reasoning-heavy stages such as requirements, architecture, code, test, and security. Use **one side-effecting executor plus one read-only reviewer** for release and operations. Cap each project at three concurrent model calls initially; adapt the pool by stage, workload size, risk, and available token budget. | Increase concurrency only when evaluation pass rate or cycle time improves without breaching cost, duplicate-work, or defect thresholds. Track p50/p95 duration, cost per accepted artifact, review disagreement, and rework rate. |
-| P1 | **Additional Systems of Record connectors** for Jira, qTest, and other delivery platforms | Extend the existing connector abstraction with capability discovery, canonical artifact types, idempotency keys, pagination, retry policies, health checks, and OAuth/managed-identity credential references. Add Jira work-item and qTest plan/case adapters first, then make connector selection configurable globally and per project. | A contract test suite proves create/read/update/link behavior across providers; retries do not duplicate artifacts; connector health and sync lag are observable. |
+| P1 | **Additional Systems of Record connectors** for qTest and other delivery platforms | Extend the existing Azure DevOps, Jira, and GitHub connector abstraction with capability discovery, canonical artifact types, idempotency keys, pagination, retry policies, health checks, and OAuth/managed-identity credential references. Add qTest plan/case adapters next and expand Jira capability discovery and health telemetry. | A contract test suite proves create/read/update/link behavior across providers; retries do not duplicate artifacts; connector health and sync lag are observable. |
 | P1 | **Iterative SDLC sub-workflows** for phases, change requests, enhancements, defects, and hotfixes | Introduce a first-class `Workstream` / `ChangeRequest` entity that references the approved baseline. Run scoped Plan → Design → Build → Test → Release sub-workflows, carry forward unaffected decisions, require impact analysis for changed artifacts, and merge accepted results back into the project state. | Multiple workstreams can run safely against one project; every changed artifact traces to its baseline, request, approvals, tests, and release. |
 | P1 | **Cross-project and cross-work-item dependencies** | Persist a dependency graph with canonical project/artifact IDs and typed edges such as blocks, consumes, duplicates, and supersedes. Synchronize provider-native links in Azure DevOps/Jira, calculate critical paths and blast radius, and block promotion when an unresolved dependency violates policy. | Dependency status is current across systems; impact analysis identifies affected projects before approval; no release proceeds with an undisclosed blocking edge. |
 | P0 | **Continuous evaluation and regression gates** | Build versioned golden datasets for each role, harvest representative production traces, and evaluate groundedness, completeness, policy compliance, tool correctness, and artifact validity on every agent/model/prompt change. Add adversarial and cross-agent handoff cases. | Prompt, model, or tool changes cannot promote when they regress required metrics; failures link back to traces, datasets, and the responsible version. |

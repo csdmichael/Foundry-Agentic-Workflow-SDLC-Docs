@@ -56,3 +56,31 @@ Procurement and operations teams often need updates on open purchase orders. Che
 
 The website allows users to enter a purchase order number and instantly view status, supplier information, expected delivery dates, and any delays. APIs retrieve the latest procurement data, while AI generates a concise status summary and highlights orders that may require escalation or follow-up.
 
+
+**6. SemiScale Alpha (or SiliconStat)
+
+Description: 
+A high-density, single-page financial analytics dashboard built to monitor the world’s top 10 semiconductor manufacturers by market capitalization. The core feature is an interactive, reactive chart and data matrix allowing users to toggle time-series performance filters seamlessly across 8 distinct intervals.
+
+Prompt: 
+You are an expert frontend developer and financial systems engineer. Build a responsive, high-performance, single-page web dashboard using React, Tailwind CSS, Lucide React icons, and Recharts.
+
+The goal is to track the top 10 semiconductor companies by market cap: NVIDIA (NVDA), TSMC (TSM), Broadcom (AVGO), Samsung Electronics (005930.KS), ASML (ASML), SK Hynix (000660.KS), Micron Technology (MU), AMD (AMD), Applied Materials (AMAT), and Intel (INTC).
+
+Implement the following specific features:
+
+1. STATE MANAGEMENT & FILTERS:
+- Create a prominent filter toolbar with 8 options: "Current", "Today", "Last Week", "3 Months", "6 Months", "1 Year", "YTD", and "5 Years".
+- "Current" should show a real-time tracking ticker grid.
+- All other filters must update a historical performance trend chart.
+
+2. DASHBOARD LAYOUT:
+- Header: Minimalist dark-mode theme ("SemiScale Alpha"), live market status indicator, and last updated timestamp.
+- Hero Grid: 10 scannable asset cards displaying the company name, ticker symbol, current market cap, real-time stock price, and absolute/percentage change colored dynamically (emerald green for gains, crimson red for losses).
+- Main Analytics Section: A large, clean line or area chart utilizing Recharts to show historical trends based on the active time filter.
+- Data Table: A sortable data matrix showing additional metrics (24h Volume, P/E Ratio, 52-Week High/Low).
+
+3. TECHNICAL REQUIREMENTS:
+- Use Tailwind CSS to enforce a professional fintech aesthetic (Slate/Zinc dark palette, high contrast, clean typography).
+- Create a mock data service layer using a static array of realistic historical data points for all 10 tickers spanning 5 years, so the filters work instantly out-of-the-box without external API keys.
+- Write modular, semantic component code. Keep everything clean, scannable, and free of redundant text.

@@ -35,16 +35,17 @@ policies** controlling when agents advance to the next stage.
 20. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
 21. [Specialized agents](#specialized-agents)
 22. [Systems of Record configuration](#systems-of-record-configuration)
-23. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
-24. [Configuration guide](#configuration-guide)
-25. [Security & guardrails](#security--guardrails)
-26. [Testing](#testing)
-27. [Deployment (CI/CD)](#deployment-cicd)
-28. [Troubleshooting](#troubleshooting)
-29. [Future work](#future-work)
-30. [Diagrams & reference material](#diagrams--reference-material)
-31. [References](#references)
-32. [License](#license)
+23. [Jira Integration](#jira-integration)
+24. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
+25. [Configuration guide](#configuration-guide)
+26. [Security & guardrails](#security--guardrails)
+27. [Testing](#testing)
+28. [Deployment (CI/CD)](#deployment-cicd)
+29. [Troubleshooting](#troubleshooting)
+30. [Future work](#future-work)
+31. [Diagrams & reference material](#diagrams--reference-material)
+32. [References](#references)
+33. [License](#license)
 
 ---
 
@@ -99,12 +100,12 @@ after each prerequisite is explicitly approved by a reviewer or by the selected
 automation policy ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
 
 **4 · Agents call Systems of Record via MCP servers & APIs (bottom).** Agents
-never own data. Each integration is a governed connector: Azure DevOps or Jira
-(work items; test cases & plans), Azure DevOps / GitHub Actions (pipelines &
-automations), GitHub (source control and documentation), GitHub Copilot
-(coding assistant), Microsoft Azure (App Services, Functions, Containers,
-Key Vault, Monitor), and Azure Communication Services Email (owner lifecycle
-notifications).
+never own data. Each integration is a governed connector: Azure DevOps, Jira,
+or GitHub Issues for linked work and test records; GitHub, Azure Repos, or
+Bitbucket Cloud for source; the matching GitHub Actions, Azure Pipelines, or
+Bitbucket Pipelines runner for CI/CD; GitHub Copilot as an optional coding
+provider; Microsoft Azure for hosting and monitoring; and Azure Communication
+Services Email for owner lifecycle notifications.
 
 **5 · Global settings ▸ Project settings (right rail).** The five Systems of
 Record are configured once globally and **pre-populated, overridable per
@@ -206,9 +207,9 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **Rich Azure DevOps planning automation:** approved Planning output creates an idempotent Epic-to-Task hierarchy plus dated sprints, shared queries, dashboards, delivery plans, estimates, tags, priorities, business value, and acceptance criteria. Generated work items are displayed as a parent/child tree, collapsed by default.
 - **Jira-native work and test evidence:** selecting Jira for Work Items or Test Cases & Test Plans automatically uses `https://csdmichael.atlassian.net/jira/software/projects` as the asset root. Project links resolve under `/jira/software/projects/{PROJECT_KEY}`, while individual issues, test plans, and test cases use `/browse/{ISSUE_KEY}` without duplicated `browse` segments.
 - **Code-to-work-item traceability:** when Code Generation publishes its branch and pull request, every related Epic, Feature, User Story, and Task moves to **Active**, receives commit/PR hyperlinks, and records an Agentic SDLC discussion entry. After the matching Azure deployment succeeds, the same hierarchy moves to **Closed** with the deployment-run link and completion comment.
-- **Architecture and code governance:** architecture, dataflow, API contracts, security design, generated application structure, tests, and CI/CD remain editable and selectable before publication. Generated code is proposed on a branch and reviewed through a real GitHub pull request; GitHub evidence is grouped into Repository, Pull requests, Commits, and Documentation.
+- **Architecture and code governance:** architecture, dataflow, API contracts, security design, generated application structure, tests, and CI/CD remain editable and selectable before publication. Generated code is proposed on a branch and reviewed through a real pull request in GitHub, Azure Repos, or Bitbucket. Evidence is grouped into Repository, Pull requests, Commits, Documentation, Pipeline, Merge, and Deployment with provider-correct URLs.
 - **Verified quality and security evidence:** test planning creates idempotent ADO plans, suites, and cases. Testing and Test Automation reuse the generated CI workflow, create plan-linked automated Test Runs, update ADO result outcomes, mark Test Cases automated, and attach pipeline hyperlinks/discussion evidence. Security and Compliance produces prioritized findings, mitigations, residual risk, and a release recommendation.
-- **Controlled Azure release:** Release approval configures repository OIDC without a client secret, provisions Azure hosting, requires a verified generated pull request, confirms the merge, triggers one deployment workflow, and validates health, OpenAPI, UI, seed data, and CRUD behavior.
+- **Controlled Azure release:** Release approval configures passwordless provider-native Azure access, provisions Azure hosting, requires a verified generated pull request, confirms the provider merge, triggers one exact deployment pipeline, and validates health, OpenAPI, UI, seed data, and CRUD behavior. GitHub draft PRs are marked ready through GraphQL; Azure Repos and Bitbucket use their native merge APIs.
 - **Release documentation in ADO:** the DevOps/Release Agent idempotently creates or updates a Project Overview wiki page with the project description, owners, hosted UI, API, health, Swagger/OpenAPI, repository, pull request, deployment run, merge commit, stack, and governance context.
 - **Post-release operations and improvement:** Ops Monitoring defines health indicators, alerts, dashboards, incident triage, and runbooks; Knowledge Assistant creates an operational brief; Insights proposes measurable thresholds and an ordered improvement backlog.
 - **Post-completion revisions:** a completed project can start a traceable revision from Requirements, Planning/Work Items, or Architecture. Prior approved gates are carried forward where valid, human instructions enter every downstream prompt, and the selected policy drives the new run through release and operations.
@@ -218,9 +219,9 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
   same ledger so a deployment cannot leave an existing approval or failure
   unnotified.
 - **Role-based access and configurable governance:** Entra ID, email OTP, guest access, configurable role permissions, agent settings, model routes, tool allow-lists, guardrails, token limits, and project-level System of Record overrides are enforced server-side.
-- **Safe project lifecycle management:** authorized users can delete a local project and independently choose cascade cleanup for workflow-created ADO, GitHub, and captured Azure App Service resources. All options are selected by default, pre-existing linked resources are retained, and local deletion waits for selected external cleanup to succeed. **Deleted Projects** in the left navigation retains a read-only audit projection of who deleted the project, when, its execution mode and last state, and each external cleanup outcome.
+- **Safe project lifecycle management:** authorized users can delete a local project and independently choose cascade cleanup for workflow-created ADO, Jira, GitHub, Bitbucket, and captured Azure App Service resources. All options are selected by default, pre-existing linked resources are retained, and local deletion waits for selected external cleanup to succeed. **Deleted Projects** in the left navigation retains a read-only audit projection of who deleted the project, when, its execution mode and last state, and each external cleanup outcome.
   Deletion runs as a durable Cosmos-backed operation with animated percentage
-  and trace events for Azure DevOps, GitHub, each App Service, the App Service
+  and trace events for Azure DevOps, Jira, GitHub, Bitbucket, each App Service, the App Service
   plan, and local records; interrupted cleanup resumes after API restart.
 
 ---
@@ -299,7 +300,7 @@ where scope or production impact materially changes:
   may be published.
 - **Architecture and Design:** approve the technical direction before code is
   generated.
-- **Pull Request Review:** inspect the real GitHub pull request before it can be
+- **Pull Request Review:** inspect the real provider-native pull request before it can be
   merged.
 - **Release and Deployment:** authorize Azure provisioning, merge, publication,
   smoke tests, ADO wiki generation, and work-item closure.
@@ -367,21 +368,78 @@ Azure management (portal) links:
 
 ## Source control repository
 
-The application supports three selectable primary source code repository providers:
-- **GitHub**: Fully integrated with GitHub Repositories. Supports public/private repositories, branch creation, file commits, pull requests, and GitHub Actions CI runs.
-- **Azure DevOps Repos**: Idempotent repository provisioning inside Azure DevOps. Integrates seamlessly with Azure Pipelines CI/CD flows.
-- **Bitbucket Cloud**: Standard Bitbucket Cloud REST v2 integration. Supports configurable workspaces, public/private repository management, commits via multipart `/src` API, pull request flows, and Bitbucket Pipelines.
+The application provisions exactly one selectable source provider for each
+project. Repository creation, default-branch discovery, file publication,
+generated branches, commits, pull requests, merge evidence, and pipeline links
+all route through the same provider abstraction.
 
-### Credentials & Env Overlays
-- **GitHub**: Requires `GITHUB_PAT` setting or environment variable.
-- **Azure DevOps**: Requires `ADO_PAT` setting or environment variable.
-- **Bitbucket Cloud**: Requires `BITBUCKET_TOKEN` (App Password) and optionals `BITBUCKET_USERNAME` and `BITBUCKET_EMAIL`. Supports `BITBUCKET_LIVE=1` env overlay.
+| Source provider | Repository capabilities | Native CI/CD |
+| --- | --- | --- |
+| **GitHub** | Public/private repositories, branches, commits, pull requests, reviews, checks, merges, and Actions links | **GitHub Actions** using `.github/workflows/ci.yml` and `.github/workflows/deploy-azure.yml` |
+| **Azure Repos** | Idempotent Git repository creation inside the provisioned Azure DevOps project, branches, pushes, pull requests, and merges | **Azure Pipelines** using `azure-pipelines.yml` and an exact registered Build Definition |
+| **Bitbucket Cloud** | REST v2 workspaces, public/private repositories, multipart `/src` commits, pull requests, merges, Pipelines, deployment environments, and secured variables | **Bitbucket Pipelines** using `bitbucket-pipelines.yml` with `oidc: true` |
 
-### Code-Generation Provider Compatibility
-If **GitHub Copilot** is selected as the code-generation provider, the system enforces **GitHub** as the source repository provider because Copilot durable delegation requires GitHub-native repositories.
+The pipeline provider is derived from source control and cannot be mixed:
+GitHub uses GitHub Actions, Azure Repos uses Azure Pipelines, and Bitbucket uses
+Bitbucket Pipelines. Jira selects work/test tracking independently; choosing a
+Jira template does not force GitHub Actions.
 
-### Durable Copilot Delegation
-Direct Foundry-to-Copilot A2A chat is not possible because Agent Tasks is async; the SDLC flow utilizes durable request/callback/reconciliation/verification signaling to coordinate and verify pull requests before advancing stages.
+### Credentials and live-mode overlays
+
+- **GitHub:** `GITHUB_PAT` with repository and workflow access plus
+  `GITHUB_LIVE=1`. Durable coding-agent callbacks use a strong
+  `GITHUB_WEBHOOK_SECRET` and public HTTPS `SDLC_API_PUBLIC_URL`. Generated
+  deployment workflows receive `GITHUB_OIDC_CLIENT_ID` and
+  `GITHUB_OIDC_TENANT_ID`; neither identifier is a client secret.
+- **Azure DevOps / Azure Repos:** `ADO_PAT` plus `ADO_LIVE=1`. Generated Azure
+  Pipelines require `ADO_AZURE_SERVICE_CONNECTION`, the exact name of an
+  existing **Azure Resource Manager** service endpoint whose authorization
+  scheme is `WorkloadIdentityFederation`. The endpoint must be ready, usable by
+  the pipeline, and target the configured Azure subscription.
+- **Bitbucket Cloud:** `BITBUCKET_LIVE=1`, `BITBUCKET_WORKSPACE`, and exactly one
+  authentication mode: `BITBUCKET_ACCESS_TOKEN` for Bearer authentication, or
+  `BITBUCKET_USERNAME` plus `BITBUCKET_APP_PASSWORD` for Basic authentication.
+  `BITBUCKET_EMAIL` is optional commit-author metadata. `BITBUCKET_TOKEN` is a
+  legacy **Bearer-token alias only** and must never contain an app password.
+
+### Native pipeline identity and passwordless Azure access
+
+Committing YAML does not register an Azure Pipeline. For Azure Repos, release
+configuration creates or reuses one Build Definition by exact repository ID,
+YAML path (`/azure-pipelines.yml`), and definition name. Feature-branch test
+runs and default-branch release runs reuse that definition and query execution
+evidence by exact branch; the implementation never chooses the first pipeline
+in a project. The `AzureCLI@2` deployment step references the exact
+`ADO_AZURE_SERVICE_CONNECTION` WIF endpoint.
+
+Bitbucket release configuration validates live OIDC discovery and deployment
+environment metadata before it writes pipeline variables. Supply
+`BITBUCKET_AZURE_CLIENT_ID`, `BITBUCKET_AZURE_TENANT_ID`, the exact
+`BITBUCKET_OIDC_ISSUER`, the required audience
+`api://AzureADTokenExchange`, `BITBUCKET_REPOSITORY_UUID`,
+`BITBUCKET_DEPLOYMENT_ENVIRONMENT_UUID`, and `BITBUCKET_OIDC_SUBJECT` copied
+from Bitbucket. Claims and UUIDs are never inferred. Set
+`BITBUCKET_AZURE_FEDERATED_CREDENTIAL_MANAGED_EXTERNALLY=1` only after an exact
+or flexible Entra federated credential has been independently verified.
+
+### Code-generation provider compatibility
+
+If **GitHub Copilot** is selected as the code-generation provider, the system
+enforces **GitHub** as the source provider because durable Agent Tasks
+delegation requires a GitHub-native repository. Microsoft Foundry code
+generation supports all three source providers through the application-owned
+publication boundary.
+
+### Durable Copilot delegation
+
+The API calls GitHub Agent Tasks directly and persists the returned task ID,
+state, branch, session, and pull-request identity. Signed webhook callbacks are
+the primary completion signal; bounded reconciliation polling recovers missed
+callbacks. The workflow accepts only explicit terminal states and independently
+re-reads the repository, branch, head commit, base branch, pull request, and
+checks before advancing. This deterministic handoff avoids an extra model/MCP
+round trip while Microsoft Agent Framework retains workflow, pause/resume,
+approval, retry, and audit ownership.
 
 The application source code is maintained in the private GitHub repository
 [csdmichael/Foundry-Agentic-Workflow-SDLC](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC).
@@ -398,9 +456,10 @@ asset class.
 
 | System of Record | Purpose | Root URL |
 | --- | --- | --- |
-| **Azure DevOps** — work items, test plans, pipelines | Epics → Features → User Stories → Tasks, test plans and cases, build/release pipelines. One project per SDLC project. | <https://dev.azure.com/csdmichael> |
+| **Azure DevOps** — work items, tests, Azure Repos, pipelines | Epics → Features → User Stories → Tasks, test plans/cases, optional source repository, Build Definition, and pipeline runs. One project per SDLC project. | <https://dev.azure.com/csdmichael> |
 | **Jira Software** — work items and test assets | Optional provider for Work Items and Test Cases & Test Plans. Project navigation uses `/jira/software/projects/{PROJECT_KEY}`; individual issues use `/browse/{ISSUE_KEY}`. | <https://csdmichael.atlassian.net/jira/software/projects> |
 | **GitHub** — source code and documentation | Generated code, branches, pull requests, uploaded intake documents, and published requirements/design artifacts. One repository per SDLC project. | <https://github.com/csdmichael> |
+| **Bitbucket Cloud** — source code and documentation | Generated code, branches, pull requests, merges, uploaded intake documents, published artifacts, and Pipelines evidence when Bitbucket is selected. | <https://bitbucket.org> |
 
 ### Project intake documents
 
@@ -411,7 +470,7 @@ takes the project metadata plus the files as multipart form data, and the API:
 
 1. validates each upload (extension allow-list, non-empty, 25 MB ceiling),
 2. extracts its text so the agents receive the content and not just a link,
-3. creates the Azure DevOps project and the GitHub repository, then
+3. creates the selected delivery SOR project and the selected GitHub, Azure Repos, or Bitbucket repository, then
 4. commits the files into that repository:
 
 | Upload | Committed to |
@@ -452,6 +511,8 @@ real, versioned, reviewable URL.
 | Jira Software (when selected) | `/jira/software/projects/<project key>` | `https://csdmichael.atlassian.net/jira/software/projects/CONTOSO` |
 | Jira issue/test asset | `/browse/<issue key>` | `https://csdmichael.atlassian.net/browse/CONTOSO-100` |
 | GitHub | `<owner>/<project-slug>` | `https://github.com/csdmichael/contoso-claims-portal` |
+| Azure Repos | `<organization>/<project>/_git/<repository>` | `https://dev.azure.com/csdmichael/Contoso%20Claims%20Portal/_git/contoso-claims-portal` |
+| Bitbucket | `<workspace>/<project-slug>` | `https://bitbucket.org/example/contoso-claims-portal` |
 
 The roots are configuration, not code — they live in
 [`api/src/config/integrations.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/integrations.config.json)
@@ -480,7 +541,7 @@ the application or provisioning workflow.
 
 | Data element | What is stored | Production destination / partition | External or derived destination |
 | --- | --- | --- | --- |
-| Project configuration | Name, owners, environment, execution mode, selected agents, per-project `agentModels` overrides, technology stack, System of Record overrides, provisioning references, and captured Azure resource IDs | Cosmos `agentic_sdlc/state`, `_collection = projects` | ADO/Jira/GitHub URLs and Azure ARM IDs point to the external resources; they are not copies of those resources |
+| Project configuration | Name, owners, environment, execution mode, selected agents, per-project `agentModels` overrides, technology stack, System of Record overrides, provisioning references, and captured Azure resource IDs | Cosmos `agentic_sdlc/state`, `_collection = projects` | ADO/Jira/GitHub/Bitbucket URLs and Azure ARM IDs point to the external resources; they are not copies of those resources |
 | Global model policy | One model deployment per agent when an administrator overrides the checked-in defaults | Cosmos `agentic_sdlc/state`, `_collection = settings`, record `global-agent-models` | Baseline recommendations remain in `api/src/agents/config/agents.config.json`; deployed model and agent definitions live in Microsoft Foundry |
 | Effective model used by an agent | Selected deployment, selection scope, Foundry agent name, routed model returned by Model Router, token estimate, and correlation ID | Cosmos `agentic_sdlc/state`, `_collection = agentRuns` | Foundry owns the Prompt Agent/version; Application Insights owns model-call telemetry |
 | Project sets | Set name, member project/run IDs, launch errors, counts, creator, and timestamps | Cosmos `agentic_sdlc/state`, `_collection = projectSets` | Each member project has independent records in the collections below |
@@ -489,17 +550,17 @@ the application or provisioning workflow.
 | Foundry circuit-breaker state | Failure count, open/closed state, retry epoch, and last model error | Cosmos `agentic_sdlc/state`, `_collection = workflowCircuitBreakers` | Controls when the API may next invoke a Foundry agent through APIM |
 | Agent Framework checkpoints | Encoded executor state and pending request/response checkpoints | Cosmos `agentic_sdlc/state`, `_collection = workflowCheckpoints` | Microsoft Agent Framework loads these documents to resume the same topology |
 | Approval gates and decisions | Gate requirements, state, attached artifacts, approver, role, decision, comments, delegation, selected references, and timestamps | Cosmos `agentic_sdlc/state`, `_collection = approvalGates` | Approved publication creates or updates the governed external record |
-| Agent execution records | Agent/model identity, prompt ID, state, output IDs, guardrail findings, summary, tool calls, external evidence URLs, and timing | Cosmos `agentic_sdlc/state`, `_collection = agentRuns` | Full model telemetry is sent to Application Insights; generated external evidence remains in ADO/Jira/GitHub/Azure |
-| Reviewable agent artifacts | Full redacted proposal content, editable review items, version, review status, owning gate/agent, and publication metadata | Cosmos `agentic_sdlc/state`, `_collection = artifacts` | Approved documents, code, and work items are published to the configured GitHub, ADO, or Jira destination |
-| Intake documents | Extracted text and document metadata used as grounded agent context | Cosmos `agentic_sdlc/state`, `_collection = intakeDocuments` | Original uploads are versioned in the project's GitHub repository under `docs/intake/`; binaries are not duplicated in Cosmos |
-| Per-project UI trace | Project creation/provisioning, artifact, agent, approval, ADO, Jira, GitHub, CI, Azure, and completion events | No standalone trace collection: `workflowTrace` is computed on read from `projects`, `workflowRuns`, `agentRuns.toolCalls`, `artifacts`, and `approvalGates` | Linked evidence remains in ADO, Jira, GitHub Actions, GitHub, and Azure |
+| Agent execution records | Agent/model identity, prompt ID, state, output IDs, guardrail findings, summary, tool calls, external evidence URLs, and timing | Cosmos `agentic_sdlc/state`, `_collection = agentRuns` | Full model telemetry is sent to Application Insights; generated external evidence remains in the selected delivery/source provider and Azure |
+| Reviewable agent artifacts | Full redacted proposal content, editable review items, version, review status, owning gate/agent, and publication metadata | Cosmos `agentic_sdlc/state`, `_collection = artifacts` | Approved documents, code, and work items are published to configured ADO, Jira, GitHub, or Bitbucket destinations |
+| Intake documents | Extracted text and document metadata used as grounded agent context | Cosmos `agentic_sdlc/state`, `_collection = intakeDocuments` | Original uploads are versioned in the selected repository under `docs/intake/`; binaries are not duplicated in Cosmos |
+| Per-project UI trace | Project creation/provisioning, artifact, agent, approval, delivery, source, native CI, Azure, and completion events | No standalone trace collection: `workflowTrace` is computed on read from `projects`, `workflowRuns`, `agentRuns.toolCalls`, `artifacts`, and `approvalGates` | Linked evidence remains in ADO/Jira/GitHub/Bitbucket, the native runner, and Azure |
 | Application and Foundry telemetry | Request/dependency spans, model invocation traces, latency, result status, and correlation attributes | Azure Application Insights `appInsights-ai-poc-myaacoub` | Filter by the `agentic-sdlc` Foundry project ID or response/conversation ID |
 | Audit and deleted-project history | Append-only user, agent, policy, notification, approval, publication, and deletion events with correlation IDs | Cosmos `agentic_sdlc/state`, `_collection = auditLogs` | **Deleted Projects** is a sanitized API/UI projection of `project.delete` audit entries, not a restorable project table |
 | Owner notification ledger | Event key, project/run/gate IDs, unique recipient list, subject, attempt count, and `Pending`/`Delivered`/`Failed`/`Skipped` status | Cosmos `agentic_sdlc/state`, `_collection = projectNotifications` | Azure Communication Services Email performs delivery; email failure never changes workflow outcome |
 | Project deletion operations | Cascade selections, current phase/message, percentage, ordered resource trace events, terminal result/error, requester, and timestamps | Cosmos `agentic_sdlc/state`, `_collection = projectDeletions` | The completed operation survives project removal and feeds the animated deletion dialog; `project.delete` remains in the append-only audit partition |
 | Users and authentication method | User identity, role, provider, enabled state, and profile metadata | Cosmos `agentic_sdlc/state`, `_collection = users` | Entra remains the identity source for internal users; OTP-backed users receive an application JWT |
 | Global System of Record and role overrides | Admin-saved SOR provider/URL choices and the editable role-permission matrix | Cosmos `agentic_sdlc/state`, `_collection = settings` | Checked-in JSON config supplies defaults and locked permission invariants |
-| Source, planning, test, and release records | Intake binaries, generated source/docs, commits, pull requests, work items, sprints, queries, dashboards, test plans/runs, and wiki | GitHub, Azure DevOps, and Jira are the authoritative external Systems of Record selected per asset class | Local records retain canonical IDs/URLs and enough metadata to render trace evidence |
+| Source, planning, test, and release records | Intake binaries, generated source/docs, commits, pull requests, work items, sprints, queries, dashboards, test plans/runs, and wiki | GitHub, Azure DevOps, Jira, and Bitbucket are the authoritative external Systems of Record selected per asset class | Local records retain canonical IDs/URLs and enough metadata to render trace evidence |
 | Provisioned runtime resources | App Service plans/apps and their live runtime state | Azure Resource Manager | Created resource IDs and ownership flags are captured in Cosmos project and release-agent records for safe cascade deletion |
 
 Secrets are not stored in these collections. PATs, ACS credentials, JWT signing
@@ -593,7 +654,7 @@ sequenceDiagram
     BU->>UI: Edit content/items + multi-select artifacts
     UI->>API: Save review and approve gate with artifactRefs
     API->>API: RBAC + gate + artifact validation
-    API->>DB: Publish selected ADO/GitHub/Azure actions
+    API->>DB: Publish selected delivery/source/Azure actions
     API->>AUD: audit(artifact.publish.approved + approval.approve)
     API-->>UI: Published assets + visual progress
   end
@@ -901,11 +962,11 @@ The Planning Agent turns the approved requirements proposal into an actionable,
 prioritized delivery hierarchy.
 
 - **Inputs:** Requirements Agent output, source documents, project ownership,
-  target environment, and configured Azure DevOps conventions.
+  target environment, and configured delivery-provider conventions.
 - **Outputs:** editable Epic → Feature → User Story → Task hierarchy with
   descriptions, acceptance criteria, estimates, priorities, tags, and parent
   links. Approval publishes selected rows plus sprints, shared queries,
-  dashboards, and the delivery plan idempotently to Azure DevOps.
+  dashboards, and delivery-planning assets idempotently to the selected provider.
 
 ### 3. Architecture Advisor Agent (Design)
 
@@ -918,12 +979,12 @@ prioritized delivery hierarchy.
 The Architecture Agent translates the approved plan into an implementable and
 secure technical design.
 
-- **Inputs:** the Planning Agent's approved backlog in Azure DevOps and the
-  related requirements and reference documents in the project's GitHub `docs/`
+- **Inputs:** the Planning Agent's approved linked backlog and the related
+  requirements and reference documents in the selected repository's `docs/`
   folder.
 - **Outputs:** solution architecture, data models, API contracts, security
-  design, and threat-model documentation committed to GitHub `docs/`, with
-  associated Azure DevOps work-item updates. The approved design is handed to the
+  design, and threat-model documentation committed to the selected repository's
+  `docs/`, with associated work-item updates. The approved design is handed to the
   Code Generation Agent.
 
 ### 4. Code Generation Agent (Build)
@@ -938,9 +999,9 @@ The Code Generation Agent implements the approved design while keeping source
 changes traceable to the backlog.
 
 - **Inputs:** architecture decisions and acceptance criteria represented by
-  Azure DevOps work items, plus the existing GitHub repository and source code.
-- **Outputs:** generated or updated GitHub source code, unit tests, and code-review
-  context, along with linked Azure DevOps work-item updates. The resulting
+  linked work items, plus the selected repository and source code.
+- **Outputs:** generated or updated source code, unit tests, and code-review
+  context, along with linked work-item updates. The resulting
   implementation is handed to the independent Code Review Agent.
 
 ### 5. Code Review Agent (Build)
@@ -1071,7 +1132,7 @@ The Knowledge Assistant assembles cited, access-aware guidance from approved
 project and operational records without owning publication side effects.
 
 - **Inputs:** intake documents, approved decisions, architecture, source docs,
-  ADO/GitHub evidence, release links, telemetry context, and runbooks.
+  delivery/source-provider evidence, release links, telemetry context, and runbooks.
 - **Outputs:** cited support brief, onboarding guidance, decision history,
   troubleshooting context, and knowledge gaps for project owners.
 
@@ -1134,19 +1195,20 @@ can use the complete governed delivery record.
 - **14-agent visual workflow** with named Foundry identity, status, prerequisite,
   human checkpoint, and last-run evidence for every agent.
 - **Human review workspace** with editable proposal content, multi-select
-  artifacts/work items, and approval-time publication to ADO/GitHub/Azure.
+  artifacts/work items, and approval-time publication to delivery/source providers and Azure.
 - **Hierarchical ADO editor** with independent child selection, branch clearing,
   add/remove controls, stable viewport/focus after deletion, editable
   types/titles, and sanitized Rendered versus Raw HTML views.
 - **Project deletion** with an explicit confirmation dialog and default-on,
   independently selectable cascade cleanup for workflow-created ADO projects,
-  GitHub repositories, and captured Azure resources. Local workflow data is
-  removed only after selected external cleanup succeeds; pre-existing linked
+  Jira spaces, GitHub or Bitbucket repositories, and captured Azure resources.
+  Local workflow data is removed only after selected external cleanup succeeds; pre-existing linked
   resources are retained. A read-only **Deleted Projects** page remains in the
   left navigation and is backed by the append-only deletion audit record.
   A durable operation presents animated percentage and chronological trace
-  messages while ADO, GitHub, each App Service, the plan, and local data are
-  processed, and startup recovery resumes an interrupted deletion safely.
+  messages while ADO, Jira, GitHub, Bitbucket, each App Service, the plan, and
+  local data are processed, and startup recovery resumes an interrupted deletion
+  safely.
 - **Business and technical owner email notifications** through Azure
   Communication Services for creation, actionable approval, terminal failure,
   and successful completion, with case-insensitive recipient deduplication and
@@ -1278,16 +1340,16 @@ at workflow level.
 Approval evidence is gate-specific and configured with the agents. Backlog
 Generation cannot close unless the selected artifacts include a Planning Agent
 hierarchy. Pull Request Review cannot close until Code Generation has produced
-a real GitHub pull-request URL. An authorized approver can reopen a closed gate
+a real provider-native pull-request URL. An authorized approver can reopen a closed gate
 for rework only with an audit comment; the gate returns to `AwaitingApproval`
 without replaying side effects. Release fails and remains awaiting approval when
-the generated PR is absent or GitHub does not report it as merged.
+the generated PR is absent or the selected source provider does not report it as merged.
 
 | Gate | Human reviews before approval | Approved side effect |
 | --- | --- | --- |
 | Plan & Scope | Intake, owners, environment, selected agents | Unlock Requirements and Planning proposals |
 | Backlog Generation | Requirements plus a required, selected Planning Agent hierarchy | Publish requirements and create selected ADO Epic/Feature/Story/Task rows, sprints, queries, dashboards, and delivery plan |
-| Architecture & Design | Editable architecture, APIs, data, threat model | Publish approved design to GitHub `docs/` |
+| Architecture & Design | Editable architecture, APIs, data, threat model | Publish approved design to the selected repository's `docs/` folder |
 | Code Generation | Editable implementation and code-structure proposal | Create generated branch and pull request; never merge |
 | Pull Request Review | Generated branch, files, PR checks, and real PR URL | Record review evidence and unlock release; approval is rejected when no generated PR exists |
 | Test Acceptance | Test plan, cases, automation proposal and evidence | Create selected test assets and queue approved automation |
@@ -1311,15 +1373,16 @@ and editable in **Admin ▸ Agent Configuration**.
 
 Configured governed destinations:
 
-- Requirements assets: the `docs/` folder of the project's own GitHub
+- Requirements assets: the `docs/` folder of the project's selected source
   repository, alongside the documents uploaded at intake.
 - Planning output: Azure DevOps or Jira, according to the project's Work Items
   selection, with an Epic → Feature → User Story → Task hierarchy.
-- Coding output: a repository in the `csdmichael` GitHub account; generated
+- Coding output: the selected GitHub, Azure Repos, or Bitbucket repository; generated
   output is committed but never auto-merged.
-- Test planning and execution: Azure Test Plans/test cases or Jira test assets,
-  according to the Test Cases & Test Plans selection, then the supported
-  automation runner.
+- Test planning and execution: Azure Test Plans/test cases, Jira test assets, or
+  GitHub Issues according to the shared delivery selection, followed by the
+  source provider's native runner: GitHub Actions, Azure Pipelines, or Bitbucket
+  Pipelines.
 
 ## Systems of Record configuration
 
@@ -1329,11 +1392,17 @@ in [Systems of Record — root URLs](#systems-of-record--root-urls).
 
 | System of Record | Default | Alternatives |
 | --- | --- | --- |
-| Documentation | GitHub `docs/` folder in the project repository | Azure DevOps Wiki, GitHub Wiki |
+| Documentation | Selected repository's `docs/` folder | Azure DevOps Wiki, GitHub Wiki |
 | Work Items Tracking | <https://dev.azure.com/csdmichael> | Jira at <https://csdmichael.atlassian.net/jira/software/projects>, GitHub Issues |
 | Test Cases & Test Plans Tracking | <https://dev.azure.com/csdmichael> | Jira at <https://csdmichael.atlassian.net/jira/software/projects>, GitHub Issues |
-| Code Build / Pipelines | <https://dev.azure.com/csdmichael> | GitHub Actions |
-| Source Code Org | <https://github.com/csdmichael> | Azure Repos |
+| Code Build / Pipelines | Derived from source: GitHub Actions | Azure Pipelines, Bitbucket Pipelines |
+| Source Code Org | <https://github.com/csdmichael> | Azure Repos, Bitbucket Cloud |
+
+Work Items and Test Cases are one linked choice: **Azure DevOps**, **Jira**, or
+**GitHub Issues**. A project cannot mix providers across those two rows. Code
+Build / Pipelines is independently derived from Source Code Org: GitHub →
+GitHub Actions, Azure Repos → Azure Pipelines, and Bitbucket → Bitbucket
+Pipelines. Choosing Jira never forces GitHub Actions.
 
 - **Defaults** live in
   [`api/src/config/systems-of-record.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/systems-of-record.config.json).
@@ -1348,14 +1417,44 @@ Resolution order is `config default → global override → project override`. T
 API rejects unknown keys, unsupported providers, and non-`https://` URLs, and
 audits every settings change.
 
-For Work Items and Test Cases & Test Plans, choosing **Jira** immediately sets
-the row URL to the canonical projects root
-`https://csdmichael.atlassian.net/jira/software/projects`. The API applies the
-same provider-specific default while validating global settings, project
-overrides, and inherited historical records, so a stale Azure DevOps URL cannot
-survive a provider change. Generated project links append the Jira project key;
-issue, test-plan, and test-case links use the site-level `/browse/{ISSUE_KEY}`
-route.
+## Jira Integration
+
+Jira Cloud is a first-class shared provider for **Work Items Tracking** and
+**Test Cases & Test Plans Tracking**. During single-project, project-set, or ZIP
+intake, users choose one of six catalog-driven project templates:
+
+- **Scrum** (default)
+- **Basic IT service management**
+- **Product discovery**
+- **Kanban**
+- **Cross-team planning**
+- **Task tracking**
+
+Templates that require Jira Service Management, Jira Product Discovery, or Jira
+Premium are labelled explicitly; licensing failures are returned without
+silently substituting another template. The intake-created project's ID, key,
+name, URL, and template are persisted and reused by planning, test planning,
+test automation, retries, and cascade deletion.
+
+Live authentication uses `JIRA_EMAIL` plus `JIRA_API_TOKEN` and
+`JIRA_LIVE=1`. The connector derives a unique uppercase alphanumeric project
+key, sends rich text as Atlassian Document Format, discovers the issue types the
+selected template actually exposes, and maps the logical Epic → Feature → User
+Story → Task hierarchy to those types. Where Jira cannot hold a logical parent
+natively, a provider issue link preserves the relationship.
+
+All six templates generate the hierarchy and test-plan/test-case assets. Every
+related issue receives canonical commit and pull-request remote links from the
+selected GitHub, Azure Repos, or Bitbucket repository, transitions to the
+in-progress state, and receives an Agentic SDLC comment. Successful deployment
+adds the exact native pipeline/deployment link before the same hierarchy moves
+to its completed state. The test suite parameterizes every Jira template against
+all three source-provider URL families.
+
+The canonical project root is
+`https://csdmichael.atlassian.net/jira/software/projects`; project links append
+the Jira key, while issue, test-plan, and test-case links use
+`/browse/{ISSUE_KEY}` without duplicate `browse` segments.
 
 ## System of record provisioning & REST wrappers
 
@@ -1364,30 +1463,31 @@ runs:
 
 | System | What is created | Where |
 | --- | --- | --- |
-| Azure DevOps | A project (Agile process, Git) | <https://dev.azure.com/csdmichael> |
+| Azure DevOps | A project for shared work/test tracking and/or an Azure Repos Git repository when selected | <https://dev.azure.com/csdmichael> |
+| Jira | A space using the selected six-template catalog entry | <https://csdmichael.atlassian.net/jira/software/projects> |
 | GitHub | A repository, plus the intake uploads under `docs/intake/` | <https://github.com/csdmichael> |
-
-Jira is created or reused on demand when an approved Planning or Test Planning
-artifact is published and the corresponding project asset class selects Jira.
-It is not part of the initial Azure DevOps/GitHub intake provisioning pair.
+| Bitbucket | A repository in the configured workspace, plus intake uploads under `docs/intake/` | <https://bitbucket.org> |
 
 ### Naming
 
-The Azure DevOps project and the GitHub repository are both named after the SDLC
-project. A project called `Casino Floor Service` produces the ADO project
-`Casino Floor Service` and the GitHub repository `casino-floor-service` — ADO
-keeps spaces and strips punctuation, GitHub is slugified.
+Selected targets are named after the SDLC project. A project called
+`Casino Floor Service` produces ADO project `Casino Floor Service`, Jira key
+`CASINOFLOO`, and GitHub, Azure Repos, or Bitbucket repository
+`casino-floor-service`: ADO keeps spaces and strips punctuation, Jira derives an
+available uppercase alphanumeric key, and repository names are slugified.
 
-The wizard's **Azure DevOps project** and **GitHub repository** fields are
-overrides, not defaults. Leave them blank to inherit the project name; fill one
-in only to target an existing shared project or repository.
+The wizard's delivery-project and source-repository fields are overrides, not
+defaults. Leave them blank to inherit the project name; fill one in only to
+target an existing shared project or repository. Bitbucket also accepts a
+workspace override.
 
 ### Visibility
 
 Azure DevOps project visibility is fixed to **Private** because the configured
-organization rejects public projects. GitHub repositories independently support
-**Public** or **Private**, with Public as the demo default. **In production the
-recommended default is private.**
+organization rejects public projects. GitHub and Bitbucket repositories
+independently support **Public** or **Private**; the checked-in default is public
+for GitHub and private for Bitbucket. **In production the recommended default is
+private.**
 
 Both the default and the allowed values come from `integrations.config.json` →
 `visibility`, so flipping an environment to private-by-default is a config change
@@ -1448,8 +1548,9 @@ Selecting a project opens its existing single-project detail and governance
 workspace with the same execution-mode icon beside the project name.
 
 Authorized project managers can permanently delete a local project with
-`DELETE /api/projects/{id}`. The confirmation UI checks both ADO and GitHub
-cascade options by default, but either can be cleared. Only SOR resources whose
+`DELETE /api/projects/{id}`. The confirmation UI checks ADO, Jira, GitHub,
+Bitbucket, and Azure-resource cascade options by default, but each can be
+cleared independently. Only resources whose
 provisioning status proves they were created by this workflow are deleted;
 pre-existing targets are retained. Selected external cleanup runs before local
 workflow, gate, artifact, intake, and agent-run records are removed, while the
@@ -1459,29 +1560,35 @@ The **Deleted Projects** item in the left navigation reads that append-only
 history through `GET /api/projects/deleted`. It is intentionally not a recycle
 bin: cascade deletion is irreversible, while the page preserves a sanitized
 record of project identity, execution mode, last workflow state, deletion actor
-and timestamp, and ADO/GitHub/Azure cleanup status.
+and timestamp, and ADO/Jira/GitHub/Bitbucket/Azure cleanup status.
 
-Provisioning and publication calls are idempotent. If an ADO project or GitHub
-repository already exists, the connector records and reuses its canonical URL
-instead of failing the workflow. Transient connector and APIM failures enter the
+Provisioning and publication calls are idempotent. If a selected ADO project,
+Jira space, GitHub repository, Azure Repos repository, or Bitbucket repository
+already exists, the connector records and reuses its canonical URL instead of
+failing the workflow. Transient connector and APIM failures enter the
 persisted retry policy; organization-specific optional ADO fields degrade
 without discarding the work-item state, history, or evidence links.
 
 Every connector is also exposed as a governed REST wrapper under
 `/api/integrations` (`integrations.read` to read, `integrations.write` to
 mutate, audit-logged either way) covering GitHub repos/branches/contents/pull
-requests/issues/Actions, Azure DevOps projects/repos/branches/work
-items/backlog/test plans/pipelines. See
+requests/issues/Actions, Azure DevOps projects/repos/branches/work items/backlog/
+test plans/Build Definitions/runs, and Bitbucket repositories/branches/contents/
+pull requests. See
 [System-of-record REST wrappers](#system-of-record-rest-wrappers) for the
 endpoint list.
 
-Connectors start in mock mode, and each one is flipped **independently** — a
-provisioning entry reading `mocked` while another reads `created` means only that
-connector still lacks its credential pair. Provide credentials, flip `useMock`
-(or set `ADO_LIVE` / `GITHUB_LIVE` to `1`), then verify:
+Each connector is flipped **independently**. Bitbucket remains mock-safe until
+its credential mode and exact OIDC metadata are configured. A provisioning
+entry reading `mocked` while another reads `created` means only that connector
+lacks its complete configuration. Provide credentials, flip `useMock` (or set
+the matching `*_LIVE=1`), then verify:
 
 ```powershell
 ./scripts/set-connector-secrets.ps1 -AdoPat -GitHubPat   # masked input, no disk writes
+./scripts/set-connector-secrets.ps1 -Jira -JiraEmail 'account@example.com'
+./scripts/set-connector-secrets.ps1 -Bitbucket -BitbucketAuthMode AccessToken
+# Or: -BitbucketAuthMode AppPassword -BitbucketUsername 'account-name'
 cd api; .\.venv\Scripts\Activate.ps1
 python scripts/verify_connectors.py --create             # creates a throwaway project in each
 ```
@@ -1518,13 +1625,27 @@ Copy [`api/.env.example`](https://github.com/csdmichael/Foundry-Agentic-Workflow
 | `FOUNDRY_ALLOW_DIRECT` | `1` allows direct Foundry calls (LOCAL DEV ONLY) |
 | `FOUNDRY_MODEL_MANAGEMENT_LIVE` | `1` enables live deployment discovery and project-scoped Prompt Agent version management; inference still uses APIM |
 | `ADO_PAT` | Azure DevOps project, work item, test plan, and pipeline permissions |
+| `ADO_AZURE_SERVICE_CONNECTION` | Exact ready AzureRM `WorkloadIdentityFederation` service-endpoint name used by generated Azure Pipelines |
 | `JIRA_EMAIL` / `JIRA_API_TOKEN` | Jira Cloud Basic authentication for project, issue, test-plan, and test-case operations |
 | `GITHUB_PAT` | GitHub repository and Actions permissions |
-| `ADO_LIVE` / `JIRA_LIVE` / `GITHUB_LIVE` | `1` flips that connector out of mock mode |
+| `GITHUB_OIDC_CLIENT_ID` / `GITHUB_OIDC_TENANT_ID` | Entra identifiers supplied to generated GitHub Actions workflows; they are not client secrets |
+| `GITHUB_WEBHOOK_SECRET` / `SDLC_API_PUBLIC_URL` | Strong callback signature secret and public HTTPS API origin for durable GitHub Agent Tasks callbacks |
+| `BITBUCKET_WORKSPACE` | Bitbucket Cloud workspace slug that owns generated repositories |
+| `BITBUCKET_ACCESS_TOKEN` | Bearer access token; one of two supported Bitbucket authentication modes |
+| `BITBUCKET_USERNAME` / `BITBUCKET_APP_PASSWORD` | Basic-auth credential pair; alternative to `BITBUCKET_ACCESS_TOKEN` |
+| `BITBUCKET_EMAIL` | Optional commit-author address |
+| `BITBUCKET_AZURE_CLIENT_ID` / `BITBUCKET_AZURE_TENANT_ID` | Entra identifiers supplied to Bitbucket Pipelines |
+| `BITBUCKET_DEPLOYMENT_ENVIRONMENT` / `BITBUCKET_DEPLOYMENT_ENVIRONMENT_UUID` | Exact Bitbucket deployment environment name and UUID |
+| `BITBUCKET_REPOSITORY_UUID` | Exact repository UUID returned by Bitbucket |
+| `BITBUCKET_OIDC_ISSUER` / `BITBUCKET_OIDC_AUDIENCE` / `BITBUCKET_OIDC_SUBJECT` | Exact discovered/token trust claims; audience must be `api://AzureADTokenExchange` |
+| `BITBUCKET_AZURE_FEDERATED_CREDENTIAL_NAME` | Entra federated-credential name used for idempotent validation/update |
+| `BITBUCKET_AZURE_FEDERATED_CREDENTIAL_MANAGED_EXTERNALLY` | `1` only after compatible Entra trust has been independently verified; exact configured Bitbucket claims and UUIDs remain mandatory |
+| `ADO_LIVE` / `JIRA_LIVE` / `GITHUB_LIVE` / `BITBUCKET_LIVE` | `1` flips that connector out of mock mode |
 
 Use [`scripts/set-connector-secrets.ps1`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/scripts/set-connector-secrets.ps1) to
-capture PATs with masked input and write them straight to the App Service
-settings — the values never touch disk or appear in logs.
+capture PATs, Jira API tokens, and either a Bitbucket Bearer access token or a
+username/app-password pair with masked input. Values are written straight to
+App Service settings and never touch disk or appear in logs.
 
 ### Per-tier config files
 
@@ -1558,20 +1679,25 @@ Set it to `false` (or set the matching `*_LIVE=1` environment variable) and
 provide credentials to switch from the mock to the live implementation.
 
 - **Azure DevOps**: set `ADO_PAT`, confirm `organizationUrl` is
-  <https://dev.azure.com/csdmichael>, and set `azureDevOps.useMock` to `false`.
-  Without a PAT the connector falls back to an Entra ID token for the Azure
-  DevOps resource, which only works when the organization is backed by the same
-  tenant.
+  <https://dev.azure.com/csdmichael>, set `ADO_LIVE=1`, and grant project, code,
+  build, test, and service-connection permissions. Set
+  `ADO_AZURE_SERVICE_CONNECTION` to the exact existing AzureRM WIF endpoint used
+  by generated deployment jobs.
 - **Jira**: set `JIRA_EMAIL` and `JIRA_API_TOKEN`, confirm `projectsUrl` is
   <https://csdmichael.atlassian.net/jira/software/projects>, and set
   `jira.useMock` to `false` or `JIRA_LIVE=1`.
 - **GitHub**: set `GITHUB_PAT` (`repo` + `workflow`) for
   <https://github.com/csdmichael>. `github.accountType` is auto-detected, so both
-  user accounts and organizations work.
-- **Testing**: choose `azure-pipelines` or `github-actions` in
-  `testAutomation.defaultRunner`. Configure `azurePipelineId`, or
-  `githubWorkflow` and `githubRef`, then disable mock mode for the selected
-  backing connector.
+  user accounts and organizations work. For Copilot delegation, also configure
+  `GITHUB_WEBHOOK_SECRET` and `SDLC_API_PUBLIC_URL`.
+- **Bitbucket**: configure one credential mode, the workspace, Azure client and
+  tenant IDs, and the exact OIDC/repository/deployment metadata described above,
+  then set `BITBUCKET_LIVE=1`. Never guess UUIDs or claims. `BITBUCKET_TOKEN` is
+  accepted only as a legacy Bearer-token alias, not as an app-password field.
+- **Testing and deployment**: select source control; the API derives its native
+  runner. GitHub uses the configured workflow; Azure Repos registers/reuses the
+  exact Build Definition automatically; Bitbucket queries branch-specific
+  Pipelines evidence. No manual `azurePipelineId` is accepted.
 
 Verify credentials end to end before enabling a connector in production:
 
@@ -1598,6 +1724,7 @@ every mutation needs `integrations.write` and is written to the audit log.
 | Project sets | `GET /api/project-sets`, `GET /api/project-sets/{id}`, `POST /api/project-sets/intake`, `POST /api/project-sets/zip/preview`, `POST /api/project-sets/zip` |
 | GitHub | `GET/POST /github/repos`, `GET /github/repos/{repo}`, `GET/POST /github/repos/{repo}/branches`, `GET/PUT /github/repos/{repo}/contents`, `GET/POST /github/repos/{repo}/pulls`, `POST /github/repos/{repo}/issues`, `GET /github/repos/{repo}/workflows`, `POST /github/repos/{repo}/workflows/{workflow}/dispatches` |
 | Azure DevOps | `GET/POST /ado/projects`, `GET /ado/projects/{project}`, `GET/POST /ado/projects/{project}/repos`, `GET/POST /ado/projects/{project}/repos/{repo}/branches`, `GET/POST /ado/projects/{project}/workitems`, `PATCH /ado/projects/{project}/workitems/{id}`, `POST /ado/projects/{project}/backlog`, `POST /ado/projects/{project}/testplans`, `POST /ado/projects/{project}/testcases`, `GET /ado/projects/{project}/pipelines`, `POST /ado/projects/{project}/pipelines/{id}/runs` |
+| Bitbucket | `GET/POST /bitbucket/repos`, `GET /bitbucket/repos/{repo}`, `GET/POST /bitbucket/repos/{repo}/branches`, `GET/POST /bitbucket/repos/{repo}/contents`, `GET/POST /bitbucket/repos/{repo}/pulls` |
 
 ## Security & guardrails
 
@@ -1669,18 +1796,18 @@ npm test -- --no-watch --browsers=ChromeHeadless
 npm run build
 ```
 
-Current validated baseline: **259 API tests** and **91 Angular tests**, followed
-by a successful production bundle. Focused coverage includes all three workflow
-modes, the four-option ROI calculations and pre-creation endpoint, canonical
-Jira project/issue links, persisted retry/circuit behavior, refusal recovery, connector
-idempotency, project deletion history, owner-recipient deduplication, one email
-per approval/completion event, repeated genuine failure notification, and
-creation rollback without a false notification.
+The validation matrix runs the complete Python suite, Angular ChromeHeadless
+suite and production bundle, plus the legacy TypeScript API Jest suite and
+compiler. Focused coverage includes all three workflow modes, four-option ROI,
+all six Jira templates with GitHub/Azure Repos/Bitbucket commit and PR evidence,
+provider-native pipeline identity, project deletion history, and notification
+idempotency.
 
 ## Deployment (CI/CD)
 
-Component-scoped workflows deploy **only the changed component** using path
-filters and Azure OIDC federated login (no stored client secrets):
+The Software Factory repository itself is hosted on GitHub. Component-scoped
+workflows deploy **only the changed component** using path filters and Azure
+OIDC federated login (no stored client secrets):
 
 - [`.github/workflows/deploy-ui.yml`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/deploy-ui.yml) — on `src/**` changes.
 - [`.github/workflows/deploy-api.yml`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/deploy-api.yml) — on `api/**` changes.
@@ -1711,6 +1838,18 @@ gates still run. Fresh merges rely on the workflow's `push` trigger; explicit
 dispatch is reserved for already-merged retries, and generated workflows cancel
 duplicate runs for the same ref.
 
+### Generated-project native pipelines
+
+| Source | Generated file | Registration and Azure authentication |
+| --- | --- | --- |
+| GitHub | `.github/workflows/ci.yml`, `.github/workflows/deploy-azure.yml` | GitHub Actions; exact ID-qualified environment FIC plus client/tenant/subscription identifiers |
+| Azure Repos | `azure-pipelines.yml` | One exact Build Definition registered/reused by repository, YAML path, and name; `AzureCLI@2` uses `ADO_AZURE_SERVICE_CONNECTION`, a pre-existing AzureRM WIF endpoint |
+| Bitbucket | `bitbucket-pipelines.yml` | Bitbucket Pipelines with `oidc: true`; exact issuer, audience, subject, repository UUID, and deployment-environment UUID validated before secured variables are written |
+
+Test Automation waits for the exact generated-branch run. Release waits for or
+dispatches the default-branch deployment and records that exact native run URL;
+unrelated newer branch runs cannot satisfy or mask either check.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -1721,15 +1860,20 @@ duplicate runs for the same ref.
 | `403 Forbidden: insufficient role` | Role lacks the capability | Adjust the role under **Admin ▸ Role Permissions**, or have an App Owner change the user's role under **Admin ▸ User Management**. |
 | `403 Human approval required before stage` | Stage gate not approved | Approve the corresponding gate in the Human Approval Queue first. |
 | Backlog gate cannot approve | No selected Planning Agent artifact | Run Planning, review/select its hierarchy, then approve. A Requirements summary alone cannot create the ADO backlog. |
-| PR Review gate cannot approve | Code Generation has not produced a real PR URL | Approve Code Generation and review the generated GitHub PR before approving PR Review. |
-| Release stays awaiting approval | Generated PR is missing/unmergeable or OIDC setup failed | Resolve the PR or repository-scoped FIC error and retry; Release never records success when GitHub reports `merged: false`. |
+| PR Review gate cannot approve | Code Generation has not produced a real PR URL | Approve Code Generation and review the generated PR in the selected source provider before approving PR Review. |
+| Release stays awaiting approval | Generated PR is missing/unmergeable, the native pipeline is unresolved, or passwordless Azure trust failed | Resolve the provider PR, exact pipeline identity, or WIF/OIDC error and retry; Release never records success unless the selected provider confirms the merge. |
 | Autonomous Test Acceptance shows queued while CI runs | Generated-code CI is still queued or in progress | No action is required. The workflow polls the existing feature-branch run and resumes automatically after successful CI evidence appears. |
 | Autonomous or Minimal workflow returns to Queued after an upstream error | A transient APIM, Foundry, connector, or external-CI failure entered durable retry/backoff, or the circuit breaker is cooling down | No action is required while it remains Queued. Inspect the project trace and Audit Trail; intervene only if retries exhaust and status becomes Failed. |
 | Agent run returns a `[MOCK ...]` response | No APIM subscription key configured | Expected in demo mode. Set `APIM_SUBSCRIPTION_KEY` to call Foundry via APIM. |
-| `409 ... is in mock mode` from `/api/integrations/**` | Connector still mocked | Set `useMock: false` in `integrations.config.json` or the matching `ADO_LIVE` / `GITHUB_LIVE` env var. |
+| `409 ... is in mock mode` from `/api/integrations/**` | Connector still mocked | Set `useMock: false` in `integrations.config.json` or the matching `ADO_LIVE` / `GITHUB_LIVE` / `JIRA_LIVE` / `BITBUCKET_LIVE` env var. |
 | Azure DevOps entry shows `mocked` while GitHub shows `created` | `ADO_PAT` / `ADO_LIVE` missing on the API; GitHub has its own pair | Run `./scripts/set-connector-secrets.ps1 -AdoPat`, set `ADO_LIVE=1` on the API app settings, then **Retry provisioning**. |
+| Jira entry shows `mocked` | Jira live mode lacks its account email/API-token pair | Run `./scripts/set-connector-secrets.ps1 -Jira -JiraEmail '<Atlassian account email>'`, then **Retry provisioning**. |
+| Bitbucket entry shows `mocked` | Bitbucket remains in safe mock mode or no complete authentication mode is configured | Capture either an access token or username/app-password pair, set `BITBUCKET_WORKSPACE` and `BITBUCKET_LIVE=1`, then **Retry provisioning**. |
+| Bitbucket release rejects issuer, audience, UUID, or subject | OIDC metadata is absent, stale, or guessed | Copy exact values from Bitbucket discovery/repository/deployment metadata and a real pipeline token. Audience must be `api://AzureADTokenExchange`. |
+| Azure Repos release cannot find/configure its pipeline | YAML exists but the exact Build Definition or WIF service connection is unavailable | Set `ADO_AZURE_SERVICE_CONNECTION` to a ready AzureRM `WorkloadIdentityFederation` endpoint targeting the configured subscription, then retry. |
 | Azure DevOps project is named `AgenticSDLC` instead of the project name | A legacy default was stored on the project | Select **Retry provisioning**. The API replaces the legacy value with the SDLC project name and keeps Azure DevOps private. |
 | `503 GITHUB_PAT is required` / `503 ADO_PAT is required` | Live mode without credentials | Run `./scripts/set-connector-secrets.ps1 -AdoPat -GitHubPat`. |
+| Bitbucket reports that credentials are required | Neither supported credential mode is complete | Set `BITBUCKET_ACCESS_TOKEN`, or set both `BITBUCKET_USERNAME` and `BITBUCKET_APP_PASSWORD`. Do not put an app password in `BITBUCKET_TOKEN`. |
 | Provisioning entry shows `failed` on a project | Missing credential or permission | Fix the credential, then use **Retry provisioning** or `POST /api/projects/{id}/provision`. |
 | Azure DevOps rejects a `public` project | Org disallows public projects | Enable *Allow public projects* in ADO org policy, or create the project as private. |
 | UI cannot reach API | Proxy/API not running | Start the API (`uvicorn app.main:app --port 8080` in `api/`) and the UI (`npm start`); the UI proxies `/api` to `http://localhost:8080`. |
@@ -1754,11 +1898,11 @@ workflow topology or the APIM model-execution boundary.
 | Priority | Future work | Proposed approach | Scale / acceptance signal |
 | --- | --- | --- | --- |
 | P1 | **Multi-agent teams per SDLC role** to optimize delivery speed, quality, and cost | Start with **two producer agents plus one reviewer** for reasoning-heavy stages such as requirements, architecture, code, test, and security. Use **one side-effecting executor plus one read-only reviewer** for release and operations. Cap each project at three concurrent model calls initially; adapt the pool by stage, workload size, risk, and available token budget. | Increase concurrency only when evaluation pass rate or cycle time improves without breaching cost, duplicate-work, or defect thresholds. Track p50/p95 duration, cost per accepted artifact, review disagreement, and rework rate. |
-| P1 | **Additional Systems of Record connectors** for qTest and other delivery platforms | Extend the existing Azure DevOps, Jira, and GitHub connector abstraction with capability discovery, canonical artifact types, idempotency keys, pagination, retry policies, health checks, and OAuth/managed-identity credential references. Add qTest plan/case adapters next and expand Jira capability discovery and health telemetry. | A contract test suite proves create/read/update/link behavior across providers; retries do not duplicate artifacts; connector health and sync lag are observable. |
+| P1 | **Additional Systems of Record connectors** for qTest and other delivery platforms | Extend the existing Azure DevOps, Jira, GitHub, and Bitbucket connector abstraction with capability discovery, canonical artifact types, idempotency keys, pagination, retry policies, health checks, and OAuth/managed-identity credential references. Add qTest plan/case adapters next and expand Jira capability discovery and health telemetry. | A contract test suite proves create/read/update/link behavior across providers; retries do not duplicate artifacts; connector health and sync lag are observable. |
 | P1 | **Iterative SDLC sub-workflows** for phases, change requests, enhancements, defects, and hotfixes | Introduce a first-class `Workstream` / `ChangeRequest` entity that references the approved baseline. Run scoped Plan → Design → Build → Test → Release sub-workflows, carry forward unaffected decisions, require impact analysis for changed artifacts, and merge accepted results back into the project state. | Multiple workstreams can run safely against one project; every changed artifact traces to its baseline, request, approvals, tests, and release. |
 | P1 | **Cross-project and cross-work-item dependencies** | Persist a dependency graph with canonical project/artifact IDs and typed edges such as blocks, consumes, duplicates, and supersedes. Synchronize provider-native links in Azure DevOps/Jira, calculate critical paths and blast radius, and block promotion when an unresolved dependency violates policy. | Dependency status is current across systems; impact analysis identifies affected projects before approval; no release proceeds with an undisclosed blocking edge. |
 | P0 | **Continuous evaluation and regression gates** | Build versioned golden datasets for each role, harvest representative production traces, and evaluate groundedness, completeness, policy compliance, tool correctness, and artifact validity on every agent/model/prompt change. Add adversarial and cross-agent handoff cases. | Prompt, model, or tool changes cannot promote when they regress required metrics; failures link back to traces, datasets, and the responsible version. |
-| P0 | **Azure Service Bus workflow backbone for autonomous and human-reviewed runs** | Replace in-process dispatch timers with Service Bus queues/topics for workflow start, stage-ready, scheduled retry, approval-resume, cancellation, and dead-letter events. Use sessions keyed by workflow run for ordered handling, duplicate detection plus Cosmos idempotency/outbox records for exactly-once effects, lock renewal for long agent calls, scheduled delivery for backoff, and DLQs for exhausted work. Autonomous runs continue consuming until completion; human-reviewed runs persist their Agent Framework checkpoint in Cosmos, release the worker while waiting, and publish one resume message when an approval decision is committed. | Closing the UI, recycling the API, or scaling workers never loses work. Autonomous runs advance without polling, approvals can remain paused for days and resume exactly once, duplicate messages do not repeat ADO/GitHub/Azure side effects, and queue depth, oldest-message age, retries, DLQs, and approval wait time meet defined SLOs. |
+| P0 | **Azure Service Bus workflow backbone for autonomous and human-reviewed runs** | Replace in-process dispatch timers with Service Bus queues/topics for workflow start, stage-ready, scheduled retry, approval-resume, cancellation, and dead-letter events. Use sessions keyed by workflow run for ordered handling, duplicate detection plus Cosmos idempotency/outbox records for exactly-once effects, lock renewal for long agent calls, scheduled delivery for backoff, and DLQs for exhausted work. Autonomous runs continue consuming until completion; human-reviewed runs persist their Agent Framework checkpoint in Cosmos, release the worker while waiting, and publish one resume message when an approval decision is committed. | Closing the UI, recycling the API, or scaling workers never loses work. Autonomous runs advance without polling, approvals can remain paused for days and resume exactly once, duplicate messages do not repeat delivery/source/Azure side effects, and queue depth, oldest-message age, retries, DLQs, and approval wait time meet defined SLOs. |
 | P0 | **Containerized self-hosted agent workers for scale, cost, and portability** | Package the Agent Framework execution worker and each specialized agent runtime as versioned OCI images, separate from the web API. Run them on Azure Container Apps Jobs or AKS with KEDA scaling from Service Bus, role-specific CPU/memory/GPU pools, bounded concurrency, managed identity, signed images/SBOMs, and OpenTelemetry. Scale routine pools to zero, use reserved capacity for steady workloads and approved spot pools for interruptible work, and retain Cosmos checkpoints so containers remain stateless and replaceable. Keep all Foundry/model calls behind APIM; “self-hosted” changes worker placement, not the governed inference boundary. Use the same images and configuration contract on any conformant Kubernetes platform for hybrid or cross-cloud portability. | The same conformance suite passes on App Service migration workers, Container Apps, AKS, and another approved Kubernetes environment. Workers scale independently by queue/stage, survive eviction without state loss, isolate high-cost roles, preserve private networking and identity, and demonstrate lower cost per accepted artifact without regressing p95 cycle time, quality, or audit completeness. |
 | P0 | **End-to-end observability and FinOps controls** | Correlate UI, API, APIM, model, tool, queue, and System of Record telemetry. Add per-project and per-role token/cost budgets, anomaly alerts, cache effectiveness, tool latency, approval wait time, and cost allocation tags. | Operators can explain every run's latency and cost; budgets can throttle or route before overrun; dashboards expose quality, throughput, and spend together. |
 | P1 | **Multi-tenant isolation and delegated administration** | Define tenant/workspace boundaries for data, identities, connectors, agent configurations, quotas, encryption keys, and audit retention. Add delegated administration, environment promotion, noisy-neighbor controls, and tenant-aware disaster recovery. | Automated isolation tests prevent cross-tenant reads/writes; quotas contain noisy workloads; tenant restore and export objectives are tested. |

@@ -1,0 +1,6 @@
+1. Business Case, Connectors and features
+2. Agentic SDLC Factory - Demo
+3. Architecture
+4. Agents and their roles & potential improvements
+5. Source Code Review
+6. Future Work

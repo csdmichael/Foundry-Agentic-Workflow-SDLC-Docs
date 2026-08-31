@@ -367,6 +367,22 @@ Azure management (portal) links:
 
 ## Source control repository
 
+The application supports three selectable primary source code repository providers:
+- **GitHub**: Fully integrated with GitHub Repositories. Supports public/private repositories, branch creation, file commits, pull requests, and GitHub Actions CI runs.
+- **Azure DevOps Repos**: Idempotent repository provisioning inside Azure DevOps. Integrates seamlessly with Azure Pipelines CI/CD flows.
+- **Bitbucket Cloud**: Standard Bitbucket Cloud REST v2 integration. Supports configurable workspaces, public/private repository management, commits via multipart `/src` API, pull request flows, and Bitbucket Pipelines.
+
+### Credentials & Env Overlays
+- **GitHub**: Requires `GITHUB_PAT` setting or environment variable.
+- **Azure DevOps**: Requires `ADO_PAT` setting or environment variable.
+- **Bitbucket Cloud**: Requires `BITBUCKET_TOKEN` (App Password) and optionals `BITBUCKET_USERNAME` and `BITBUCKET_EMAIL`. Supports `BITBUCKET_LIVE=1` env overlay.
+
+### Code-Generation Provider Compatibility
+If **GitHub Copilot** is selected as the code-generation provider, the system enforces **GitHub** as the source repository provider because Copilot durable delegation requires GitHub-native repositories.
+
+### Durable Copilot Delegation
+Direct Foundry-to-Copilot A2A chat is not possible because Agent Tasks is async; the SDLC flow utilizes durable request/callback/reconciliation/verification signaling to coordinate and verify pull requests before advancing stages.
+
 The application source code is maintained in the private GitHub repository
 [csdmichael/Foundry-Agentic-Workflow-SDLC](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC).
 Request access from **Michael Yaacoub** to view or clone the repository.

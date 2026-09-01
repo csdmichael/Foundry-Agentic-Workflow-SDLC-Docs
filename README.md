@@ -456,6 +456,8 @@ into. Every new project gets its own project or repository underneath the
 applicable root, and each agent action lands in the provider selected for that
 asset class.
 
+![Agentic SDLC Factory connector matrix for documentation, work tracking, pipelines, and Azure hosting](docs/SDLC-Factory-Connectors.png)
+
 | System of Record | Purpose | Root URL |
 | --- | --- | --- |
 | **Azure DevOps** — work items, tests, Azure Repos, pipelines | Epics → Features → User Stories → Tasks, test plans/cases, optional source repository, Build Definition, and pipeline runs. One project per SDLC project. | <https://dev.azure.com/csdmichael> |

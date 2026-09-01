@@ -185,7 +185,8 @@ persistence root.
 Agent identities are stable configuration-derived IDs so a checkpoint can be
 rehydrated with the same 14-node topology. A policy coordinator can approve a
 non-human gate only after its artifact and tool-evidence requirements pass; ADO,
-GitHub, test, and Azure side effects still occur only during gate publication.
+Jira, source-control, test, and Azure side effects still occur only during gate
+publication.
 
 ---
 
@@ -203,13 +204,14 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **Live Foundry model selection and pricing:** Global Settings discovers every successful deployment from the configured Foundry account. Agent-compatible models are selectable; embedding, image, and other incompatible deployments remain visible with a disabled state and explanation. Every model dropdown includes input/output price per 1M tokens. The Model Suggestions & Pricing page lists per-agent recommendations, quality scores, cached-input rates, source, and effective pricing.
 - **Ten evidence-aware approval gates:** Cost and Time Estimate, Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Human and Minimal modes require approval of the generated preflight estimate before any agent invocation; Autonomous validates its attached estimate artifact and records an automated decision.
 - **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
+- **Use-case reuse guard:** single-project and project-set dropdowns disable a catalog use case while a non-deleted project already implements it. The project persists the catalog ID so renaming cannot bypass the guard; legacy projects are matched by exact catalog name. Deleting the project makes the use case selectable again, and the API rejects duplicate active IDs to protect concurrent or direct requests.
 - **Parallel project sets:** one wizard creates `2–20` projects, defaults each to Fully autonomous execution, applies one shared agent/model policy, and allows a project to replace that policy without changing its siblings. Manual intake and validated folder-per-project ZIP import both create independent workflow runs, which advance concurrently with isolated checkpoints, approvals, audit records, and systems of record.
 - **Rich Azure DevOps planning automation:** approved Planning output creates an idempotent Epic-to-Task hierarchy plus dated sprints, shared queries, dashboards, delivery plans, estimates, tags, priorities, business value, and acceptance criteria. Generated work items are displayed as a parent/child tree, collapsed by default.
 - **Jira-native work and test evidence:** selecting Jira for Work Items or Test Cases & Test Plans automatically uses `https://csdmichael.atlassian.net/jira/software/projects` as the asset root. Project links resolve under `/jira/software/projects/{PROJECT_KEY}`, while individual issues, test plans, and test cases use `/browse/{ISSUE_KEY}` without duplicated `browse` segments.
 - **Code-to-work-item traceability:** when Code Generation publishes its branch and pull request, every related Epic, Feature, User Story, and Task moves to **Active**, receives commit/PR hyperlinks, and records an Agentic SDLC discussion entry. After the matching Azure deployment succeeds, the same hierarchy moves to **Closed** with the deployment-run link and completion comment.
 - **Architecture and code governance:** architecture, dataflow, API contracts, security design, generated application structure, tests, and CI/CD remain editable and selectable before publication. Generated code is proposed on a branch and reviewed through a real pull request in GitHub, Azure Repos, or Bitbucket. Evidence is grouped into Repository, Pull requests, Commits, Documentation, Pipeline, Merge, and Deployment with provider-correct URLs.
 - **Verified quality and security evidence:** test planning creates idempotent ADO plans, suites, and cases. Testing and Test Automation reuse the generated CI workflow, create plan-linked automated Test Runs, update ADO result outcomes, mark Test Cases automated, and attach pipeline hyperlinks/discussion evidence. Security and Compliance produces prioritized findings, mitigations, residual risk, and a release recommendation.
-- **Controlled Azure release:** Release approval configures passwordless provider-native Azure access, provisions Azure hosting, requires a verified generated pull request, confirms the provider merge, triggers one exact deployment pipeline, and validates health, OpenAPI, UI, seed data, and CRUD behavior. GitHub draft PRs are marked ready through GraphQL; Azure Repos and Bitbucket use their native merge APIs.
+- **Controlled Azure release:** Release approval configures passwordless provider-native Azure access, provisions Azure hosting, requires a verified generated pull request, confirms the provider merge, triggers one exact deployment pipeline, and validates health, OpenAPI, UI, seed data, and CRUD behavior. GitHub draft PRs are marked ready through GraphQL immediately before merging; Azure Repos and Bitbucket use their native merge APIs. Ready or already-merged PRs are idempotent no-ops.
 - **Release documentation in ADO:** the DevOps/Release Agent idempotently creates or updates a Project Overview wiki page with the project description, owners, hosted UI, API, health, Swagger/OpenAPI, repository, pull request, deployment run, merge commit, stack, and governance context.
 - **Post-release operations and improvement:** Ops Monitoring defines health indicators, alerts, dashboards, incident triage, and runbooks; Knowledge Assistant creates an operational brief; Insights proposes measurable thresholds and an ordered improvement backlog.
 - **Post-completion revisions:** a completed project can start a traceable revision from Requirements, Planning/Work Items, or Architecture. Prior approved gates are carried forward where valid, human instructions enter every downstream prompt, and the selected policy drives the new run through release and operations.
@@ -459,7 +461,7 @@ asset class.
 | **Azure DevOps** — work items, tests, Azure Repos, pipelines | Epics → Features → User Stories → Tasks, test plans/cases, optional source repository, Build Definition, and pipeline runs. One project per SDLC project. | <https://dev.azure.com/csdmichael> |
 | **Jira Software** — work items and test assets | Optional provider for Work Items and Test Cases & Test Plans. Project navigation uses `/jira/software/projects/{PROJECT_KEY}`; individual issues use `/browse/{ISSUE_KEY}`. | <https://csdmichael.atlassian.net/jira/software/projects> |
 | **GitHub** — source code and documentation | Generated code, branches, pull requests, uploaded intake documents, and published requirements/design artifacts. One repository per SDLC project. | <https://github.com/csdmichael> |
-| **Bitbucket Cloud** — source code and documentation | Generated code, branches, pull requests, merges, uploaded intake documents, published artifacts, and Pipelines evidence when Bitbucket is selected. | <https://bitbucket.org> |
+| **Bitbucket Cloud** — source code and documentation | Generated code, branches, pull requests, merges, uploaded intake documents, published artifacts, and Pipelines evidence when Bitbucket is selected. | <https://bitbucket.org/myaacoub/workspace> |
 
 ### Project intake documents
 
@@ -520,6 +522,12 @@ The roots are configuration, not code — they live in
 [`api/src/config/systems-of-record.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/systems-of-record.config.json)
 (per-class defaults, overridable globally and per project). See
 [Systems of Record configuration](#systems-of-record-configuration).
+
+The `baseUrls` object in `integrations.config.json` is the single checked-in
+source for Azure DevOps (including its profiles service), GitHub, Jira, and
+Bitbucket API/web roots. Both API loaders project those values into connector
+settings and accept optional environment overrides, so clients do not duplicate
+service URLs.
 
 ---
 
@@ -962,11 +970,12 @@ The Planning Agent turns the approved requirements proposal into an actionable,
 prioritized delivery hierarchy.
 
 - **Inputs:** Requirements Agent output, source documents, project ownership,
-  target environment, and configured delivery-provider conventions.
+  target environment, and configured shared delivery-system conventions.
 - **Outputs:** editable Epic → Feature → User Story → Task hierarchy with
   descriptions, acceptance criteria, estimates, priorities, tags, and parent
   links. Approval publishes selected rows plus sprints, shared queries,
-  dashboards, and delivery-planning assets idempotently to the selected provider.
+  provider-supported planning structures idempotently to Azure DevOps, Jira, or
+  GitHub Issues.
 
 ### 3. Architecture Advisor Agent (Design)
 
@@ -979,9 +988,9 @@ prioritized delivery hierarchy.
 The Architecture Agent translates the approved plan into an implementable and
 secure technical design.
 
-- **Inputs:** the Planning Agent's approved linked backlog and the related
-  requirements and reference documents in the selected repository's `docs/`
-  folder.
+- **Inputs:** the Planning Agent's approved backlog in the selected delivery
+  system and related requirements/reference documents in the selected source
+  repository's `docs/` folder.
 - **Outputs:** solution architecture, data models, API contracts, security
   design, and threat-model documentation committed to the selected repository's
   `docs/`, with associated work-item updates. The approved design is handed to the
@@ -998,10 +1007,11 @@ secure technical design.
 The Code Generation Agent implements the approved design while keeping source
 changes traceable to the backlog.
 
-- **Inputs:** architecture decisions and acceptance criteria represented by
-  linked work items, plus the selected repository and source code.
+- **Inputs:** architecture decisions and acceptance criteria represented by the
+  selected work-item system, plus the selected repository and source code.
 - **Outputs:** generated or updated source code, unit tests, and code-review
-  context, along with linked work-item updates. The resulting
+  context in GitHub, Azure Repos, or Bitbucket, along with linked work-item
+  updates. The resulting
   implementation is handed to the independent Code Review Agent.
 
 ### 5. Code Review Agent (Build)
@@ -1032,10 +1042,11 @@ request rather than repeating code generation.
 The Test Planning Agent turns requirements and acceptance criteria into a
 traceable quality strategy before execution starts.
 
-- **Inputs:** approved requirements, ADO acceptance criteria, architecture
+- **Inputs:** approved requirements, provider-neutral acceptance criteria, architecture
   decisions, generated code structure, and configured test-management target.
 - **Outputs:** editable unit, integration, security, performance, and UAT scope,
-  plus idempotent Azure DevOps Test Plan, suite, and Test Case proposals.
+  plus idempotent test plan, suite, and case proposals in the selected shared
+  delivery system.
 
 ### 7. Testing Agent (Test)
 
@@ -1067,7 +1078,8 @@ and durable execution records.
 - **Inputs:** test strategy, generated application, existing fixtures, pipeline
   provider, and Azure DevOps Test Plan/Test Case mappings.
 - **Outputs:** automated unit/integration/security/UAT assets, CI pipeline links,
-  plan-linked ADO Test Runs and results, automated Test Case status, and
+  provider-native run evidence and, for Azure DevOps, plan-linked Test Runs and
+  results; automated Test Case status and
   retry-safe evidence for Test Acceptance Approval.
 
 ### 9. Security and Compliance Agent (Security)
@@ -1132,7 +1144,8 @@ The Knowledge Assistant assembles cited, access-aware guidance from approved
 project and operational records without owning publication side effects.
 
 - **Inputs:** intake documents, approved decisions, architecture, source docs,
-  delivery/source-provider evidence, release links, telemetry context, and runbooks.
+  provider-native work/source/pipeline evidence, release links, telemetry
+  context, and runbooks.
 - **Outputs:** cited support brief, onboarding guidance, decision history,
   troubleshooting context, and knowledge gaps for project owners.
 
@@ -1176,7 +1189,7 @@ can use the complete governed delivery record.
 - Responsive UI (phone / tablet / web) with role-aware navigation.
 - Microsoft **Entra ID** + **email OTP** authentication.
 - **New Project** wizard: intake with requirements, technical requirements, and
-  UX mockup documents uploaded from disk, ADO & GitHub targets, environment,
+  UX mockup documents uploaded from disk, shared delivery and source targets, environment,
   agent selection, one of three execution policies, and a pre-creation
   four-option cost/ROI comparison.
 - **New Project Set** wizard: manual multi-project intake or ZIP folder import,
@@ -1253,7 +1266,8 @@ guide.
 The guide includes a component architecture diagram covering Microsoft Entra
 user and Agent Identities, Microsoft Foundry, Azure API Management, Microsoft
 Agent Framework, Cosmos DB, App Service, Application Insights, Azure DevOps
-APIs/MCP tools, GitHub APIs/MCP tools, and GitHub OIDC deployment.
+APIs/MCP tools, GitHub/Azure Repos/Bitbucket APIs, and provider-native
+passwordless deployment.
 
 ## Repository layout
 
@@ -1348,7 +1362,7 @@ the generated PR is absent or the selected source provider does not report it as
 | Gate | Human reviews before approval | Approved side effect |
 | --- | --- | --- |
 | Plan & Scope | Intake, owners, environment, selected agents | Unlock Requirements and Planning proposals |
-| Backlog Generation | Requirements plus a required, selected Planning Agent hierarchy | Publish requirements and create selected ADO Epic/Feature/Story/Task rows, sprints, queries, dashboards, and delivery plan |
+| Backlog Generation | Requirements plus a required, selected Planning Agent hierarchy | Publish requirements and create the selected provider-native Epic/Feature/Story/Task hierarchy and supported planning structures |
 | Architecture & Design | Editable architecture, APIs, data, threat model | Publish approved design to the selected repository's `docs/` folder |
 | Code Generation | Editable implementation and code-structure proposal | Create generated branch and pull request; never merge |
 | Pull Request Review | Generated branch, files, PR checks, and real PR URL | Record review evidence and unlock release; approval is rejected when no generated PR exists |
@@ -1375,14 +1389,14 @@ Configured governed destinations:
 
 - Requirements assets: the `docs/` folder of the project's selected source
   repository, alongside the documents uploaded at intake.
-- Planning output: Azure DevOps or Jira, according to the project's Work Items
-  selection, with an Epic → Feature → User Story → Task hierarchy.
+- Planning output: the project's shared delivery SOR (Azure DevOps, Jira, or
+  GitHub Issues) with an Epic → Feature → User Story → Task hierarchy.
 - Coding output: the selected GitHub, Azure Repos, or Bitbucket repository; generated
   output is committed but never auto-merged.
-- Test planning and execution: Azure Test Plans/test cases, Jira test assets, or
-  GitHub Issues according to the shared delivery selection, followed by the
-  source provider's native runner: GitHub Actions, Azure Pipelines, or Bitbucket
-  Pipelines.
+- Test planning and execution: the same delivery SOR selected for work items,
+  followed by the source provider's native runner. Jira can be paired with any
+  source provider; GitHub uses GitHub Actions, Azure Repos uses Azure Pipelines,
+  and Bitbucket uses Bitbucket Pipelines.
 
 ## Systems of Record configuration
 
@@ -1466,7 +1480,7 @@ runs:
 | Azure DevOps | A project for shared work/test tracking and/or an Azure Repos Git repository when selected | <https://dev.azure.com/csdmichael> |
 | Jira | A space using the selected six-template catalog entry | <https://csdmichael.atlassian.net/jira/software/projects> |
 | GitHub | A repository, plus the intake uploads under `docs/intake/` | <https://github.com/csdmichael> |
-| Bitbucket | A repository in the configured workspace, plus intake uploads under `docs/intake/` | <https://bitbucket.org> |
+| Bitbucket | A repository in the configured workspace, plus intake uploads under `docs/intake/` | <https://bitbucket.org/myaacoub/workspace> |
 
 ### Naming
 
@@ -1625,12 +1639,15 @@ Copy [`api/.env.example`](https://github.com/csdmichael/Foundry-Agentic-Workflow
 | `FOUNDRY_ALLOW_DIRECT` | `1` allows direct Foundry calls (LOCAL DEV ONLY) |
 | `FOUNDRY_MODEL_MANAGEMENT_LIVE` | `1` enables live deployment discovery and project-scoped Prompt Agent version management; inference still uses APIM |
 | `ADO_PAT` | Azure DevOps project, work item, test plan, and pipeline permissions |
+| `ADO_ORGANIZATION_URL` / `ADO_PROFILES_BASE_URL` | Optional overrides for the centralized Azure DevOps organization and graph/profile service roots |
 | `ADO_AZURE_SERVICE_CONNECTION` | Exact ready AzureRM `WorkloadIdentityFederation` service-endpoint name used by generated Azure Pipelines |
 | `JIRA_EMAIL` / `JIRA_API_TOKEN` | Jira Cloud Basic authentication for project, issue, test-plan, and test-case operations |
+| `JIRA_BASE_URL` / `JIRA_PROJECTS_URL` | Optional overrides for the centralized Jira tenant and Jira Software project roots |
 | `GITHUB_PAT` | GitHub repository and Actions permissions |
 | `GITHUB_OIDC_CLIENT_ID` / `GITHUB_OIDC_TENANT_ID` | Entra identifiers supplied to generated GitHub Actions workflows; they are not client secrets |
 | `GITHUB_WEBHOOK_SECRET` / `SDLC_API_PUBLIC_URL` | Strong callback signature secret and public HTTPS API origin for durable GitHub Agent Tasks callbacks |
 | `BITBUCKET_WORKSPACE` | Bitbucket Cloud workspace slug that owns generated repositories |
+| `BITBUCKET_API_BASE_URL` / `BITBUCKET_SITE_URL` / `BITBUCKET_WORKSPACE_URL` / `BITBUCKET_REPO_BASE_URL` | Optional overrides for centralized Bitbucket API and web roots |
 | `BITBUCKET_ACCESS_TOKEN` | Bearer access token; one of two supported Bitbucket authentication modes |
 | `BITBUCKET_USERNAME` / `BITBUCKET_APP_PASSWORD` | Basic-auth credential pair; alternative to `BITBUCKET_ACCESS_TOKEN` |
 | `BITBUCKET_EMAIL` | Optional commit-author address |
@@ -1674,9 +1691,9 @@ the migration flag back to `0`. Keep the old file store as rollback evidence.
 
 ### Enabling real integrations
 
-Each connector in `integrations.config.json` has `useMock: true` by default.
-Set it to `false` (or set the matching `*_LIVE=1` environment variable) and
-provide credentials to switch from the mock to the live implementation.
+The checked-in connectors are live by default. Provide credentials before using
+them; automated tests explicitly enable mock mode. The matching `*_LIVE=1`
+variables remain available as deployment overlays for older environments.
 
 - **Azure DevOps**: set `ADO_PAT`, confirm `organizationUrl` is
   <https://dev.azure.com/csdmichael>, set `ADO_LIVE=1`, and grant project, code,
@@ -1707,7 +1724,7 @@ python scripts/verify_connectors.py                    # connectivity only
 python scripts/verify_connectors.py --create           # creates a throwaway project
 ```
 
-Turning off a mock does not bypass workflow controls. The named human approval
+Live mode does not bypass workflow controls. The named human approval
 gate is evaluated by the Agent Framework approval executor before any connector
 receives the request.
 

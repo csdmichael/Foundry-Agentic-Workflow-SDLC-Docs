@@ -40,6 +40,8 @@ flowchart LR
   subgraph Delivery[Systems of record]
       ADO[Azure DevOps REST APIs<br/>ADO MCP tools]
       GitHub[GitHub REST APIs<br/>GitHub MCP tools]
+     SharePoint[SharePoint Online<br/>Microsoft Graph]
+     Confluence[Confluence Cloud<br/>REST APIs]
       Actions[GitHub Actions<br/>component and generated-app CI/CD]
       Azure[Azure Resource Manager<br/>App Service resources]
   end
@@ -60,6 +62,8 @@ flowchart LR
   Agents -. managed identity record .-> AgentIDs
   API -->|Governed connector wrappers| ADO
   API -->|Governed connector wrappers| GitHub
+   API -->|Managed identity| SharePoint
+   API -->|Dedicated API token| Confluence
   API --> Azure
   Actions -->|OIDC, no client secret| WorkloadOIDC
   WorkloadOIDC --> Azure
@@ -75,7 +79,7 @@ flowchart LR
 | Model boundary | Azure API Management | The only production inference path to Microsoft Foundry |
 | Agent control plane | Microsoft Foundry | Prompt Agent definitions, versions, model bindings, and generated Agent Identities |
 | Project data | Cosmos DB SQL API in production; file repository for local development | Projects, project sets, workflow runs, gates, artifacts, checkpoints, notifications, and audit records |
-| Delivery records | Azure DevOps and GitHub | Work items, tests, repositories, pull requests, pipelines, wiki pages, and release evidence |
+| Delivery records | Azure DevOps, GitHub, SharePoint, and Confluence | Work items, tests, repositories, pull requests, pipelines, project pages, governed documentation, and release evidence |
 
 ## Technologies and Azure services
 
@@ -103,6 +107,8 @@ flowchart LR
 | Azure Communication Services Email | External-user OTP and access-request email |
 | Azure DevOps | Project/backlog, queries, sprints, dashboards, delivery plans, Test Plans, pipelines, and wiki |
 | GitHub | Source, intake documents, branches, pull requests, Actions, and generated application deployment |
+| SharePoint Online | Optional per-project documentation system of record with a modern overview page and document-library hierarchy |
+| Confluence Cloud | Optional per-project documentation system of record with a project page, folders, attachment pages, and versioned content |
 
 The checked-in reference deployment uses subscription
 `86b37969-9445-49cf-b03f-d8866235171c`, resource group `ai-myaacoub`, Foundry
@@ -140,6 +146,10 @@ The setup operator needs permission to:
 Use least-privileged scopes and resource-level assignments. Do not grant broad
 subscription roles when a resource group or individual resource scope is
 sufficient.
+
+When SharePoint is enabled, grant the API App Service managed identity the
+Microsoft Graph **Sites.ReadWrite.All application role** and complete tenant
+administrator consent. This connector intentionally uses no client secret.
 
 ## Local build prerequisites
 
@@ -340,7 +350,7 @@ For local development, leave `PERSIST_PROVIDER=file` and set
 `PERSIST_FILE_DATA_ROOT` to an isolated directory. The file repository creates
 collection JSON files on first use.
 
-### 8. Configure Azure DevOps and GitHub
+### 8. Configure systems of record
 
 1. Set the Azure DevOps organization and GitHub owner defaults in the API
    integration configuration.
@@ -352,6 +362,108 @@ collection JSON files on first use.
    throwaway targets before production use.
 5. Keep MCP server allow-lists in agent configuration. MCP tools do not bypass
    the API approval and publication controls.
+
+#### SharePoint project documentation
+
+1. Set the approved HTTPS site URL and project root folder in the integration
+   configuration. The reference root is `Agentic SDLC Projects`.
+2. Enable a system-assigned identity on the API App Service.
+3. Grant that identity Microsoft Graph `Sites.ReadWrite.All` as an
+   **application** permission and complete admin consent. Do not create a
+   SharePoint client secret.
+4. Confirm the identity can resolve the configured site and its default
+   document library before allowing project creation.
+
+For each project that selects **SharePoint** as its documentation system of
+record, the application creates or reuses:
+
+- one modern project overview page in Site Pages;
+- one project folder beneath the configured project root; and
+- Requirements, Technical Requirements, UX and Design, Architecture and
+  Design, Planning, Testing, Release and Operations, and Supporting Files
+  category folders.
+
+The connector stores returned site, drive, page, folder, and category IDs in
+the project provisioning record. Repeated publication overwrites the same file
+path rather than creating duplicate project folders. Cascade deletion targets
+only the recorded project page and project folder, and only when the workflow
+record says it created them.
+
+#### Confluence project documentation
+
+1. Create or select a dedicated Atlassian account with permission to use
+   Confluence and create/update/delete content in the configured space.
+2. Create an Atlassian API token **with scopes** for that account. Select only
+   these granular Confluence scopes:
+   - `read:space:confluence`
+   - `write:space:confluence`
+   - `read:page:confluence`
+   - `write:page:confluence`
+   - `delete:page:confluence`
+   - `write:folder:confluence`
+   - `delete:folder:confluence`
+   - `read:hierarchical-content:confluence`
+   - `read:content-details:confluence`
+   - `write:attachment:confluence`
+
+   Do not grant attachment deletion, space deletion, user-directory, admin,
+   audit, comment, blog, database, Smart Link, or classic broad-content scopes.
+   Keep Jira and Confluence credentials separate even when they use the same
+   Atlassian tenant.
+3. Run the repository connector secret script with `-Confluence -Gui`. Enter
+   the account email in the prompt and paste the token into the topmost masked
+   Windows dialog. The token is sent directly to App Service settings; it is
+   never sent to chat, written to source, or echoed to the terminal.
+4. Configure the tenant cloud ID, space key/name, and whether the connector may
+   create a missing space. A scoped token must use
+   `https://api.atlassian.com/ex/confluence/{cloudId}` for API calls; it does
+   not authenticate against the tenant-site REST URL. The tenant web URL
+   remains the base for human-facing page, folder, and attachment links. The
+   reference tenant cloud ID is non-secret and is checked into the integration
+   configuration; override it with `CONFLUENCE_CLOUD_ID` for another tenant.
+
+For each project that selects **Confluence** as its documentation system of
+record, the application creates or reuses:
+
+- one project overview page under the space home page;
+- one `Project Files` folder under the overview page;
+- the same eight category folders used by SharePoint; and
+- one attachment page inside each category folder because Confluence
+  attachments require a content parent.
+
+Attachment publication uses Confluence's create-or-update-by-filename
+operation, so retries replace an existing attachment instead of accumulating
+copies. Overview page updates increment the current page version. Cascade
+deletion is explicit and bottom-up: category attachment pages, category
+folders, project folder, then project page. Pre-existing resources are retained.
+
+#### Select the documentation SOR during project creation
+
+In **New Project → Systems of Record**, choose `SharePoint` or `Confluence` for
+Documentation. The setting is project-scoped. The Existing Projects, Dashboard,
+Project Cost Comparison, Project Cost & Usage, and Project Details pages render
+provider icons from that project's effective SOR configuration.
+
+Intake files publish after project hierarchy provisioning. Generated
+requirements, architecture, and release overview content remains subject to
+the configured approval policy. Microsoft Agent Framework still owns workflow
+pause/resume behavior, and APIM remains the Foundry model execution boundary.
+
+#### Verify without mock content
+
+Run the connector verification utility without `--create` first. This performs
+read-only authentication/connectivity checks. After local tests pass, use
+`--only sharepoint --create` or `--only confluence --create` separately to
+create real throwaway content, capture its returned page/folder/file URL, and
+clean it up. Never run a broad create verification against production tenants.
+
+Common failures:
+
+- SharePoint `403`: the API identity lacks Graph application permission,
+  tenant admin consent, or site access.
+- Confluence `401`: the dedicated account email/token pair is invalid.
+- Confluence `403`: the account lacks space or content permissions.
+- Connector status `mock`: the deployment live-mode setting is not enabled.
 
 ### 9. Configure GitHub OIDC deployment
 
@@ -380,7 +492,8 @@ At minimum, configure the settings documented in the main README, including:
 - Foundry account/project endpoint and model-management flag;
 - Cosmos provider, endpoint, database, and container settings (managed identity;
    no production connection string);
-- ADO and GitHub connector credentials/live flags; and
+- ADO, GitHub, Jira, Bitbucket, and Confluence connector credentials/live flags,
+  plus the SharePoint site URL (SharePoint uses managed identity); and
 - UI CORS origins and external UI-to-API base URL mapping.
 
 Never set generic `AZURE_CLIENT_ID` or `AZURE_TENANT_ID` App Service settings
@@ -398,13 +511,15 @@ and verify:
    internal IDs remain unprefixed;
 4. APIM can invoke one Prompt Agent and correlation IDs reach telemetry;
 5. connector status reports the intended live/mock state;
-6. a two-project autonomous set creates two distinct workflow runs and advances
+6. SharePoint or Confluence read-only verification succeeds for every enabled
+   documentation provider;
+7. a two-project autonomous set creates two distinct workflow runs and advances
    them concurrently;
-7. Human review and Minimal review pause only at their configured gates;
-8. approved output publishes to ADO/GitHub exactly once on retry; and
-9. project/run/gate/artifact/agent-run IDs and counts match the pre-migration
+8. Human review and Minimal review pause only at their configured gates;
+9. approved output publishes to the selected systems of record exactly once on retry;
+10. project/run/gate/artifact/agent-run IDs and counts match the pre-migration
    baseline; and
-10. the phone, tablet, and web layouts have no horizontal overflow or occluded
+11. the phone, tablet, and web layouts have no horizontal overflow or occluded
     actions.
 
 ## Production readiness checklist
@@ -419,7 +534,10 @@ and verify:
    is disabled after parity validation.
 - [ ] The 12 Foundry agents are ordered `010` through `120` with no old active names.
 - [ ] Cosmos backup, retention, restore, and regional strategy are approved.
-- [ ] ADO and GitHub credentials have rotation owners and expiry monitoring.
+- [ ] Connector credentials have rotation owners and expiry monitoring;
+   SharePoint uses Graph application permission instead of a client secret.
+- [ ] SharePoint and Confluence create/update/delete proofs use real throwaway
+   resources and confirm that pre-existing resources are retained.
 - [ ] App Insights alerts cover API failures, APIM/model latency, connector errors,
       workflow failures, and queue age.
 - [ ] GitHub environment protection and OIDC trust are verified.

@@ -462,6 +462,7 @@ The page will be structured as follows:
     Centralized Security Governance by Project, Team across all Systems of Record chosen per project
     Centralized Cost Reporting and Dashboards for Token Usage, Cost, Time Elapsed for each project SDLC Workflow
     Suggestions for Model Selection per agent in SDLC life-cycle
+    Notification System using Emails (Can be extended to Teams and other Communication Channels)
     Full Audit Trail  
   3. Architecture diagrams:
       Stored at: C:\Projects\Foundry\Foundry-Agentic-Workflow-SDLC-Docs\docs

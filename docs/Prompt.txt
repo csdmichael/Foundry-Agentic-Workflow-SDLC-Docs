@@ -442,3 +442,39 @@ Ensure that for every available jira template, the work items will get generated
 For source code, add BitBucket integration so on project creation, user can choose between GitHub, Azure DevOps and BitBucket and implement whole integration (don't mock it) so when user chooses bitbucket, the source code will go there. Also, bring bitbucket icon and put it where relevant similar to GitHub and ADO. Use Google Gemini Flash 3.5 to implement this change. At end, commit, publish and test
 This is my bitbucket workspace to use as default base for any bitbucket new repos: https://bitbucket.org/myaacoub/workspace . All base urls for ado, github, bitbucket, jira needs to be in config file.
 Also, update readme in docs repo to reflect latest changes.
+------------------------
+
+Build a web page in UI project that render on different platforms (Web, Mobile, iPad) with different layout to fit each platform that has no authentication to market and host demo resources for this application (SDLC Software Factory). 
+The page will be structured as follows:
+- Title & Overview about this application
+- Tabs to display following:
+  1. Video player that can be expanded full screen. It should show list of videos in sequence and allow automatic transition to next video.
+      Videos are in: C:\Projects\Foundry\Foundry-Agentic-Workflow-SDLC-Docs\docs\Videos
+      First video starts automatically on opening page
+  2. Features List:
+    Agentic Software SDLC Factory (for one or multiple projects to start at once)
+    Configurable execution modes: Autonomous vs Human Review vs Minimal Human Review
+    14 Agents Workflow for SDLC using Microsoft Agent Framework to orchestrate Agents in Foundry
+    Selection of Models used for each agent based on Model Catalog from Foundry
+    Visual Tracking of SDLC Workflow by stage
+    Visual Tracking of Agents sequence as they progress
+    7 Connectors to SDLC Systems of Record (SharePoint, Confluence, ADO, JIRA, GitHub, BitBucket, Azure Cloud)
+    Centralized Security Governance by Project, Team across all Systems of Record chosen per project
+    Centralized Cost Reporting and Dashboards for Token Usage, Cost, Time Elapsed for each project SDLC Workflow
+    Suggestions for Model Selection per agent in SDLC life-cycle
+    Full Audit Trail  
+  3. Architecture diagrams:
+      Stored at: C:\Projects\Foundry\Foundry-Agentic-Workflow-SDLC-Docs\docs
+      Diagrams Sequence is:
+        HL_Architecture
+        Autonomous-SDLC-Workflow
+        HumanReview-SDLC-Workflow
+        Display table for Human gates vs automatic per execution mode from Readme in Docs Repo
+        MultiAgent Workflow using Microsoft Agent Framework
+        SDLC-Factory-Connectors
+      Describe each diagram briefly
+  4. Try It
+    UI Url
+    GitHub Docs Repo Url
+    Request access link that triggers email to myaacoub@microsoft.com
+In header add Microsoft logo and footer is Michael Yaacoub | Sr Solution Engineer | My LinkedIn: https://www.linkedin.com/in/michael-yaacoub-7a46436/

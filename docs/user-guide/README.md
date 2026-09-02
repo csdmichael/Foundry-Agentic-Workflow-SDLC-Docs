@@ -1,14 +1,14 @@
 # Agentic SDLC Software Factory - User Guide
 
-Production edition: August 2026
+Production edition: September 2026
 
-This guide explains every user-facing screen in the Agentic SDLC Software Factory, the end-to-end Microsoft Agent Framework workflow, the three execution policies, both code-generation providers, and the generated assets published to Azure DevOps, GitHub, and Azure App Service.
+This guide explains every Factory application screen, the end-to-end Microsoft Agent Framework workflow, the three execution policies, both code-generation providers, and the generated assets published to Azure DevOps, GitHub, and Azure App Service.
 
 Production application: [https://agentic-sdlc-ui-my.azurewebsites.net](https://agentic-sdlc-ui-my.azurewebsites.net)
 
 API health: [https://agentic-sdlc-api-my.azurewebsites.net/api/health](https://agentic-sdlc-api-my.azurewebsites.net/api/health)
 
-> Factory screenshots were captured from the deployed production UI at release `3fd8ff2`, backed by API release `29e8d09`. GitHub and published-application images are native browser captures. Azure DevOps and Azure resource images labeled **Live generated evidence** were rendered from live REST responses because unattended browser access stopped at interactive Microsoft sign-in. No synthetic work-item, test, dashboard, wiki, repository, or resource counts are used in those evidence views.
+> Factory screenshots were captured from the deployed production UI at release `381828d`, backed by API release `3c07f26`. GitHub and published-application images are native browser captures. Azure DevOps and Azure resource images labeled **Live generated evidence** were rendered from live REST responses because unattended browser access stopped at interactive Microsoft sign-in. No synthetic work-item, test, dashboard, wiki, repository, or resource counts are used in those evidence views.
 
 ## Guide scope
 
@@ -21,6 +21,7 @@ The guide covers:
 - Human Review, Minimal, and Autonomous execution policies.
 - All 14 ordered Microsoft Foundry Prompt Agents and all ten approval gates.
 - Workflow Runs, Human Approval Queue, Agent Activity, and Audit Trail.
+- App Owner-only site visit totals, daily trends, unique IP addresses, approximate locations, and drill-through evidence.
 - User, project access, role, agent, model, system-of-record, APIM, and configuration administration.
 - Generated ADO work items, sprints, queries, dashboards, delivery plan, test plan, test run, wiki, and Azure Repo.
 - Generated GitHub repository, README, pull request, and deployment workflow.
@@ -222,15 +223,15 @@ Human Review is intended for regulated, unfamiliar, high-impact, or first-of-kin
 
 <img src="images/00-human-review-workflow.png" alt="Human Review workflow">
 
-The Fleet Inspection and Maintenance project shows the live full-review state. Overview identifies owners, environment, targets, current stage, and policy.
+The Fleet Inspection and Maintenance project shows the live full-review state. Its Overview tab identifies owners, environment, execution policy, code-generation provider, current stage, provisioned delivery systems, and lifecycle progress.
 
 <img src="images/31-human-project-overview.png" alt="Human Review project overview">
 
-The workflow panel shows ordered agent state, named Foundry identity, prerequisite, publication gate, last run, and whether each checkpoint is human or automated.
+The Agent workflow tab shows ordered agent state, named Foundry identity, prerequisite, publication gate, last run, and whether each checkpoint is human or automated.
 
 <img src="images/32-human-agent-workflow.png" alt="Human Review 14-agent workflow">
 
-The review workspace lets an approver include or exclude artifacts, edit proposal text, expand work-item trees, select exact rows, add/remove items, save drafts, approve and publish, request changes, reject, or delegate.
+The Human review tab lets an approver include or exclude artifacts, edit proposal text, expand work-item trees, select exact rows, add or remove items, save drafts, approve and publish, request changes, reject, or delegate.
 
 <img src="images/33-human-review-workspace.png" alt="Human review workspace">
 
@@ -238,13 +239,13 @@ The review workspace lets an approver include or exclude artifacts, edit proposa
 
 Minimal policy pauses at the preflight estimate plus Backlog Generation, Architecture and Design, Pull Request Review, and Release and Deployment. Routine evidence gates normally advance automatically.
 
-The Semiconductor Stock Prices project uses Minimal policy with GitHub Copilot as its external code-generation provider. Its current production capture intentionally shows a post-output guardrail block: Minimal reduces approval clicks, but it never bypasses guardrails, evidence checks, authorization, or audit. An authorized operator can inspect the blocked run and retry automation after remediation.
+The Supplier Risk Dashboard project demonstrates Minimal policy with Microsoft Foundry as its code-generation provider. Its current production state is paused at Pull Request Review in the Build stage: routine code-generation, test, and security evidence advanced under policy, while the consequential pull-request decision remains a human checkpoint. Minimal reduces approval clicks, but it never bypasses guardrails, evidence checks, authorization, or audit.
 
 <img src="images/43-minimal-review-overview.png" alt="Minimal review project overview">
 
 <img src="images/44-minimal-agent-workflow.png" alt="Minimal review agent workflow">
 
-The same editing and evidence controls remain available at retained human checkpoints and when a stopped automation run needs an authorized recovery decision.
+The workflow distinguishes retained human checkpoints from policy-automated checkpoints on every agent row. The same proposal editing, selection, evidence, and publication controls remain available whenever Minimal requires a person to decide.
 
 <img src="images/45-minimal-review-workspace.png" alt="Minimal review workspace">
 
@@ -268,45 +269,45 @@ Completed projects can start a traceable revision from Requirements, Planning/Wo
 
 ## Project Details workspace
 
-Project Details is the primary project command center. The redesigned page keeps the project overview, model policy, revision controls, lifecycle, review workspace, provisioned systems, checkpoints, and evidence in one sequential view. Dense evidence sections start collapsed so the current workflow state stays prominent.
+Project Details is the primary project command center. Four tabs separate the current state without losing context: **Overview**, **Agent workflow**, **Generated assets**, and **Human review**. Tab badges show agent, asset, and review-attention counts. Dense model, system-of-record, run-evidence, and checkpoint-history sections remain collapsible so the current workflow state stays prominent.
 
 ### Overview, models, and revision
 
-Overview shows owners, environment, execution mode, code-generation provider, current stage, ADO project, GitHub repository, and visibility. **Agent models** expands only when a project-level override must be inspected or changed. A completed project also displays **Revise completed workflow**, which can restart from Requirements, Planning / Work Items, or Architecture while retaining published artifacts as the traceable baseline.
+The Overview tab shows owners, environment, execution mode, code-generation provider, current stage, provisioned ADO project and GitHub repository, visibility, and all eight lifecycle-stage states. **Agent models** expands only when a project-level override must be inspected or changed. A completed project also displays **Revise completed workflow**, which can restart from Requirements, Planning / Work Items, or Architecture while retaining published artifacts as the traceable baseline.
 
 ### Provisioned systems
 
-This section links the ADO project and GitHub repository and surfaces provisioning status, visibility, reason, and actionable failure detail.
+The Overview tab links the ADO project and GitHub repository and surfaces provisioning status, visibility, reason, and actionable failure detail.
 
 <img src="images/34-provisioned-systems.png" alt="Provisioned systems of record">
 
 ### Lifecycle and agent workflow
 
-The consolidated lifecycle shows all eight stage states and all 14 ordered agents in one panel. Each row includes the named identity, last run, proposal state, prerequisite, checkpoint type, and current action. Knowledge Assistant and Cost Estimator are advisory and therefore show an automated, no-publication-gate checkpoint.
+The Overview stage strip shows all eight lifecycle states. The Agent workflow tab then presents all 14 ordered agents; each row includes the named identity, last run, proposal state, prerequisite, checkpoint type, and current action. Knowledge Assistant and Cost Estimator are advisory and therefore show an automated, no-publication-gate checkpoint.
 
 <img src="images/35-project-lifecycle.png" alt="Project lifecycle">
 
 ### Approval gates
 
-Approval Checkpoints keeps active decisions expanded and groups previous and future decisions compactly. It shows role, state, artifact count, comments, delegation, prerequisites, and available actions across all ten gates, including the preflight cost-and-time estimate.
+Within Human review, Approval Checkpoints keeps active decisions expanded and groups previous and future decisions compactly. Active rows show lifecycle role, state, artifact count, evidence requirements, and available actions; shared comment and delegation fields preserve decision context for the audit record.
 
 <img src="images/36-approval-gates.png" alt="Project approval gates">
 
 ### Systems of Record
 
-This collapsible section resolves each of the five effective providers and indicates whether the value is inherited globally or overridden for the project.
+The collapsible Overview section resolves four effective entries: Documentation, Work items & test cases, Code Build / Pipelines, and Source Code Org. Each entry identifies its provider and whether the value is inherited globally or overridden for the project.
 
 <img src="images/37-project-sor.png" alt="Project Systems of Record">
 
 ### Generated assets
 
-The collapsible Generated Assets section groups links by system and category: ADO planning/test/release assets, GitHub repository/PR/commits/docs, Azure applications, and other published evidence.
+The Generated assets tab groups links by system and category. Collapsible Azure DevOps and GitHub groups expose the work-item hierarchy, test and release evidence, repository and pull-request links, documentation, and other published outputs.
 
 <img src="images/38-generated-assets.png" alt="Generated assets">
 
 ### Agent runs and artifacts
 
-The collapsible Agent Runs & Artifacts trace correlates each prompt agent, model, timing, token count, guardrail outcome, proposal artifact, and verified tool call.
+The collapsible Agent runs & artifacts table lives under Agent workflow. It correlates each agent and model with its proposal summary, published asset links, token estimate, guardrail outcome, start time, and run status.
 
 <img src="images/39-agent-runs-artifacts.png" alt="Agent runs and artifacts">
 
@@ -536,6 +537,16 @@ APIM & Configuration presents sanitized runtime configuration and connector read
 
 <img src="images/19-apim-configuration.png" alt="APIM and Configuration">
 
+### Site Visit Analytics
+
+Site Visit Analytics is available only to the immutable App Owner role at `/admin/site-visits`. Date controls filter the complete view. Summary metrics report total visits, unique IP addresses, active days, and resolved-location coverage. Visits by day and top locations support trend analysis, while the visitor table shows first and last visit times and days visited.
+
+Select a day or visitor address to drill through to timestamp, IP address, approximate city/state/country, referrer, and browser/device metadata for each page load. Drill results are paginated. The API does not cache owner analytics responses, and non-App Owner roles are denied even if they attempt to navigate directly to the route.
+
+<img src="images/19b-site-visit-analytics.png" alt="App Owner Site Visit Analytics with exact IP addresses redacted">
+
+Exact IP addresses are redacted in this public guide image. Authorized App Owners see the complete values in the live application.
+
 ## In-app documentation
 
 The application includes role-accessible reference topics.
@@ -615,6 +626,7 @@ Cost, Usage & Model Governance explains measured versus estimated tokens, persis
 | Agent Configuration | `/admin/agents` | Administration |
 | Global Settings | `/admin/settings` | Administration |
 | APIM & Configuration | `/admin/config` | Administration |
+| Site Visit Analytics | `/admin/site-visits` | Administration |
 | Overview documentation | `/docs/overview` | In-app documentation |
 | Architecture documentation | `/docs/architecture` | In-app documentation |
 | HITL documentation | `/docs/hitl` | In-app documentation |
@@ -641,6 +653,7 @@ Cost, Usage & Model Governance explains measured versus estimated tokens, persis
 - Factory API: [https://agentic-sdlc-api-my.azurewebsites.net](https://agentic-sdlc-api-my.azurewebsites.net)
 - Application repository: [https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC)
 - Documentation repository: [https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs)
+- User guide PDF: [Download Agentic-SDLC-User-Guide.pdf](https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/user-guide/Agentic-SDLC-User-Guide.pdf)
 - Generated Equipment Calibration repository: [https://github.com/csdmichael/equipment-calibration-compliance](https://github.com/csdmichael/equipment-calibration-compliance)
 - Published Field Service UI: [https://field-service-work-orders-ui.azurewebsites.net](https://field-service-work-orders-ui.azurewebsites.net)
 - Published Field Service Swagger: [https://field-service-work-orders-api.azurewebsites.net/docs](https://field-service-work-orders-api.azurewebsites.net/docs)

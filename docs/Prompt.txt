@@ -479,3 +479,6 @@ The page will be structured as follows:
     GitHub Docs Repo Url
     Request access link that triggers email to myaacoub@microsoft.com
 In header add Microsoft logo and footer is Michael Yaacoub | Sr Solution Engineer | My LinkedIn: https://www.linkedin.com/in/michael-yaacoub-7a46436/
+
+For showcase page, implement in backend an audit trail for all visits to this page with IP addresses. 
+Then build a separate page inside Application after login that is accessible only to App Owners that show a dashboard of Site visits total and by day and by unique IP addresses with drill through capability and the location (Country, City, State) of each IP who visited the page so I can knoww who was interested in this

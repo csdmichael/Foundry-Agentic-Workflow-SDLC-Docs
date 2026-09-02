@@ -11,41 +11,55 @@ policies** controlling when agents advance to the next stage.
 
 ---
 
+## Video series
+
+| # | Video | Description | Length |
+| --- | --- | --- | --- |
+| 1 | [Business Case, Connectors and Features](https://1drv.ms/v/c/4673b287399127d4/IQAL38Gy6OtuQ72oqSCGkMvZATjJfg4W_rgFDHuFvIHO45Y?e=yHViMV) | Introduces the business case for an agentic SDLC factory and surveys its connectors and core features. | 15:52 |
+| 2 | [Agentic SDLC Factory - Demo](https://1drv.ms/v/c/4673b287399127d4/IQAJaDCxQXDNS788h6Grlr7dAfmy7fZGFhEQnRszeknU_hE?e=jADQ69) | Demonstrates the factory's end-to-end workflow and key user experiences. | 40:07 |
+| 3 | [Architecture](https://1drv.ms/v/c/4673b287399127d4/IQAKycU4e6-URKH-7zAtRoQ0AWPcOnYaEUF5R2ArkTWR0V0?e=IUrbuv) | Explains the solution architecture, major components, integrations, and data flow. | 9:18 |
+| 4 | [Agents and Their Roles & Potential Improvements](https://1drv.ms/v/c/4673b287399127d4/IQAZOdkh9YZjTZsPrSaRU0pHAdTcfiiNQDiAW00xyKwp5kk?e=s3C7dT) | Reviews each agent's workflow responsibilities and identifies opportunities for future improvement. | 12:36 |
+| 5 | [Source Code Review](https://1drv.ms/v/c/4673b287399127d4/IQA16_VgqthfQKRqGIcW9loRAXbXByv-YV0_UiRSHguwfBc?e=CuWqIz) | Walks through the repository structure and the implementation of the factory's principal components. | 10:20 |
+| 6 | [Future Work](https://1drv.ms/v/c/4673b287399127d4/IQDdG0jLTsHkRrVheYXL5kCzAY0N_sgZSo3Wxwn7EgZ_Ymg?e=9kDJKe) | Outlines planned enhancements and possible directions for extending the solution. | 8:24 |
+
+---
+
 ## Table of contents
 
-1. [Architecture at a glance](#architecture-at-a-glance)
-2. [Capabilities at a glance](#capabilities-at-a-glance)
-3. [Workflow execution modes](#workflow-execution-modes)
-4. [Live deployment](#live-deployment)
-5. [Source control repository](#source-control-repository)
-6. [Systems of Record — root URLs](#systems-of-record--root-urls)
-7. [Data storage and persistence map](#data-storage-and-persistence-map)
-8. [Data flow](#data-flow)
-9. [Agent Framework workflow](#agent-framework-workflow)
-10. [Model selection and routing](#model-selection-and-routing)
-11. [Cost, usage, and model governance](#cost-usage-and-model-governance)
-12. [Code generation providers](#code-generation-providers)
-13. [Agents in the workflow](#agents-in-the-workflow)
-14. [Features](#features)
-15. [Technology stack](#technology-stack)
-16. [Project setup prerequisites](#project-setup-prerequisites)
-17. [Repository layout](#repository-layout)
-18. [Quick start (local)](#quick-start-local)
-19. [Authentication & roles](#authentication--roles)
-20. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
-21. [Specialized agents](#specialized-agents)
-22. [Systems of Record configuration](#systems-of-record-configuration)
-23. [Jira Integration](#jira-integration)
-24. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
-25. [Configuration guide](#configuration-guide)
-26. [Security & guardrails](#security--guardrails)
-27. [Testing](#testing)
-28. [Deployment (CI/CD)](#deployment-cicd)
-29. [Troubleshooting](#troubleshooting)
-30. [Future work](#future-work)
-31. [Diagrams & reference material](#diagrams--reference-material)
-32. [References](#references)
-33. [License](#license)
+1. [Video series](#video-series)
+2. [Architecture at a glance](#architecture-at-a-glance)
+3. [Capabilities at a glance](#capabilities-at-a-glance)
+4. [Workflow execution modes](#workflow-execution-modes)
+5. [Live deployment](#live-deployment)
+6. [Source control repository](#source-control-repository)
+7. [Systems of Record — root URLs](#systems-of-record--root-urls)
+8. [Data storage and persistence map](#data-storage-and-persistence-map)
+9. [Data flow](#data-flow)
+10. [Agent Framework workflow](#agent-framework-workflow)
+11. [Model selection and routing](#model-selection-and-routing)
+12. [Cost, usage, and model governance](#cost-usage-and-model-governance)
+13. [Code generation providers](#code-generation-providers)
+14. [Agents in the workflow](#agents-in-the-workflow)
+15. [Features](#features)
+16. [Technology stack](#technology-stack)
+17. [Project setup prerequisites](#project-setup-prerequisites)
+18. [Repository layout](#repository-layout)
+19. [Quick start (local)](#quick-start-local)
+20. [Authentication & roles](#authentication--roles)
+21. [Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)
+22. [Specialized agents](#specialized-agents)
+23. [Systems of Record configuration](#systems-of-record-configuration)
+24. [Jira Integration](#jira-integration)
+25. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
+26. [Configuration guide](#configuration-guide)
+27. [Security & guardrails](#security--guardrails)
+28. [Testing](#testing)
+29. [Deployment (CI/CD)](#deployment-cicd)
+30. [Troubleshooting](#troubleshooting)
+31. [Future work](#future-work)
+32. [Diagrams & reference material](#diagrams--reference-material)
+33. [References](#references)
+34. [License](#license)
 
 ---
 

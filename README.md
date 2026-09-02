@@ -15,12 +15,12 @@ policies** controlling when agents advance to the next stage.
 
 | # | Video | Description | Length |
 | --- | --- | --- | --- |
-| 1 | [Business Case, Connectors and Features](https://1drv.ms/v/c/4673b287399127d4/IQAL38Gy6OtuQ72oqSCGkMvZATjJfg4W_rgFDHuFvIHO45Y?e=yHViMV) | Introduces the business case for an agentic SDLC factory and surveys its connectors and core features. | 15:52 |
-| 2 | [Agentic SDLC Factory - Demo](https://1drv.ms/v/c/4673b287399127d4/IQAJaDCxQXDNS788h6Grlr7dAfmy7fZGFhEQnRszeknU_hE?e=jADQ69) | Demonstrates the factory's end-to-end workflow and key user experiences. | 40:07 |
-| 3 | [Architecture](https://1drv.ms/v/c/4673b287399127d4/IQAKycU4e6-URKH-7zAtRoQ0AWPcOnYaEUF5R2ArkTWR0V0?e=IUrbuv) | Explains the solution architecture, major components, integrations, and data flow. | 9:18 |
-| 4 | [Agents and Their Roles & Potential Improvements](https://1drv.ms/v/c/4673b287399127d4/IQAZOdkh9YZjTZsPrSaRU0pHAdTcfiiNQDiAW00xyKwp5kk?e=s3C7dT) | Reviews each agent's workflow responsibilities and identifies opportunities for future improvement. | 12:36 |
-| 5 | [Source Code Review](https://1drv.ms/v/c/4673b287399127d4/IQA16_VgqthfQKRqGIcW9loRAXbXByv-YV0_UiRSHguwfBc?e=CuWqIz) | Walks through the repository structure and the implementation of the factory's principal components. | 10:20 |
-| 6 | [Future Work](https://1drv.ms/v/c/4673b287399127d4/IQDdG0jLTsHkRrVheYXL5kCzAY0N_sgZSo3Wxwn7EgZ_Ymg?e=9kDJKe) | Outlines planned enhancements and possible directions for extending the solution. | 8:24 |
+| 1 | <a href="https://1drv.ms/v/c/4673b287399127d4/IQAL38Gy6OtuQ72oqSCGkMvZATjJfg4W_rgFDHuFvIHO45Y?e=yHViMV" target="_blank" rel="noopener noreferrer">Business Case, Connectors and Features</a> | Introduces the business case for an agentic SDLC factory and surveys its connectors and core features. | 15:52 |
+| 2 | <a href="https://1drv.ms/v/c/4673b287399127d4/IQAJaDCxQXDNS788h6Grlr7dAfmy7fZGFhEQnRszeknU_hE?e=jADQ69" target="_blank" rel="noopener noreferrer">Agentic SDLC Factory - Demo</a> | Demonstrates the factory's end-to-end workflow and key user experiences. | 40:07 |
+| 3 | <a href="https://1drv.ms/v/c/4673b287399127d4/IQAKycU4e6-URKH-7zAtRoQ0AWPcOnYaEUF5R2ArkTWR0V0?e=IUrbuv" target="_blank" rel="noopener noreferrer">Architecture</a> | Explains the solution architecture, major components, integrations, and data flow. | 9:18 |
+| 4 | <a href="https://1drv.ms/v/c/4673b287399127d4/IQAZOdkh9YZjTZsPrSaRU0pHAdTcfiiNQDiAW00xyKwp5kk?e=s3C7dT" target="_blank" rel="noopener noreferrer">Agents and Their Roles &amp; Potential Improvements</a> | Reviews each agent's workflow responsibilities and identifies opportunities for future improvement. | 12:36 |
+| 5 | <a href="https://1drv.ms/v/c/4673b287399127d4/IQA16_VgqthfQKRqGIcW9loRAXbXByv-YV0_UiRSHguwfBc?e=CuWqIz" target="_blank" rel="noopener noreferrer">Source Code Review</a> | Walks through the repository structure and the implementation of the factory's principal components. | 10:20 |
+| 6 | <a href="https://1drv.ms/v/c/4673b287399127d4/IQDdG0jLTsHkRrVheYXL5kCzAY0N_sgZSo3Wxwn7EgZ_Ymg?e=9kDJKe" target="_blank" rel="noopener noreferrer">Future Work</a> | Outlines planned enhancements and possible directions for extending the solution. | 8:24 |
 
 ---
 

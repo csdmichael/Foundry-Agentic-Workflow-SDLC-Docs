@@ -1,6 +1,18 @@
 1. Business Case, Connectors and features
+https://1drv.ms/v/c/4673b287399127d4/IQAL38Gy6OtuQ72oqSCGkMvZATjJfg4W_rgFDHuFvIHO45Y?e=yHViMV
+
 2. Agentic SDLC Factory - Demo
+https://1drv.ms/v/c/4673b287399127d4/IQAJaDCxQXDNS788h6Grlr7dAfmy7fZGFhEQnRszeknU_hE?e=jADQ69
+
 3. Architecture
+https://1drv.ms/v/c/4673b287399127d4/IQAKycU4e6-URKH-7zAtRoQ0AWPcOnYaEUF5R2ArkTWR0V0?e=IUrbuv
+
 4. Agents and their roles & potential improvements
+https://1drv.ms/v/c/4673b287399127d4/IQAZOdkh9YZjTZsPrSaRU0pHAdTcfiiNQDiAW00xyKwp5kk?e=s3C7dT
+
 5. Source Code Review
+https://1drv.ms/v/c/4673b287399127d4/IQA16_VgqthfQKRqGIcW9loRAXbXByv-YV0_UiRSHguwfBc?e=CuWqIz
+
 6. Future Work
+https://1drv.ms/v/c/4673b287399127d4/IQDdG0jLTsHkRrVheYXL5kCzAY0N_sgZSo3Wxwn7EgZ_Ymg?e=9kDJKe
+

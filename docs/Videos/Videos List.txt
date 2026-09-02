@@ -1,8 +1,11 @@
 1. Business Case, Connectors and features
 https://1drv.ms/v/c/4673b287399127d4/IQAL38Gy6OtuQ72oqSCGkMvZATjJfg4W_rgFDHuFvIHO45Y?e=yHViMV
 
-2. Agentic SDLC Factory - Demo
+2.a. Agentic SDLC Factory - Demo
 https://1drv.ms/v/c/4673b287399127d4/IQAJaDCxQXDNS788h6Grlr7dAfmy7fZGFhEQnRszeknU_hE?e=jADQ69
+
+2.b. Agentic SDLC Factory - Demo
+https://1drv.ms/v/c/4673b287399127d4/IQATC7Ls04vTTJSiyJ-0TahJAb-yHlt9nDc7jJ2ldSrvjAY?e=zOeYax
 
 3. Architecture
 https://1drv.ms/v/c/4673b287399127d4/IQAKycU4e6-URKH-7zAtRoQ0AWPcOnYaEUF5R2ArkTWR0V0?e=IUrbuv

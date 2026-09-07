@@ -1691,11 +1691,13 @@ App Service settings and never touch disk or appear in logs.
 ### Cosmos DB production persistence
 
 [`persistence.config.json`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/persistence/config/persistence.config.json)
-defines the production database, shared container, and partition key. Run the
-manual [Cosmos provisioning workflow](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/provision-cosmos.yml)
-to idempotently create `agentic_sdlc/state`, validate the policy-managed private
-endpoint and DNS path, integrate the API with `snet-appservice`, and grant its
-managed identity database-scoped Cosmos DB Built-in Data Contributor access.
+defines the production database, shared container, and partition key. From the
+application repository's Actions page, manually run
+`.github/workflows/provision-cosmos.yml` by following GitHub's
+[manual workflow guidance](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
+It idempotently creates `agentic_sdlc/state`, validates the policy-managed
+private endpoint and DNS path, integrates the API with `snet-appservice`, and
+grants its managed identity database-scoped Cosmos DB Built-in Data Contributor access.
 The workflow never changes Cosmos public access, firewall, bypass, IP rules,
 private endpoints, or private DNS.
 
@@ -1845,7 +1847,7 @@ OIDC federated login (no stored client secrets):
 
 - [`.github/workflows/deploy-ui.yml`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/deploy-ui.yml) — on `src/**` changes.
 - [`.github/workflows/deploy-api.yml`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/deploy-api.yml) — on `api/**` changes.
-- [`.github/workflows/provision-cosmos.yml`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/provision-cosmos.yml) — manual, idempotent private Cosmos database/container, VNet, and database-scoped RBAC provisioning.
+- `.github/workflows/provision-cosmos.yml` — manual, idempotent private Cosmos database/container, VNet, and database-scoped RBAC provisioning; see GitHub's [manual workflow guidance](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 - [`.github/workflows/ci.yml`](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/.github/workflows/ci.yml) — build + test both on PRs.
 
 Set repository variables `UI_WEBAPP_NAME` / `API_WEBAPP_NAME` and secrets

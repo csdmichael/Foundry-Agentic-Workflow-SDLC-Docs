@@ -60,7 +60,9 @@ policies** controlling when agents advance to the next stage.
 31. [Future work](#future-work)
 32. [Diagrams & reference material](#diagrams--reference-material)
 33. [References](#references)
-34. [License](#license)
+34. [Provide feedback](#provide-feedback)
+35. [Disclaimers](#disclaimers)
+36. [License](#license)
 
 ---
 

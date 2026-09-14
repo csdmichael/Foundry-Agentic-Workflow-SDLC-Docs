@@ -1274,21 +1274,15 @@ can use the complete governed delivery record.
 | Auth | Microsoft Entra ID + email OTP (Azure Communication Services) |
 | Notifications | Azure Communication Services Email + persisted project-event idempotency |
 | Gateway | Azure API Management in front of Azure AI Foundry |
-| Hosting | Azure App Service (B2 plan) |
+| Hosting | Azure App Service (Linux B3 baseline; separate UI/API plans recommended for production) |
 
 ## Project setup prerequisites
 
-The environment build, identity/RBAC boundaries, Azure service inventory,
-APIM-only inference architecture, ordered Foundry Agent setup, connector
-configuration, deployment sequence, and production-readiness checklist are in
-the standalone [Project Setup Prerequisites](docs/PROJECT-SETUP-PREREQUISITES.md)
-guide.
-
-The guide includes a component architecture diagram covering Microsoft Entra
-user and Agent Identities, Microsoft Foundry, Azure API Management, Microsoft
-Agent Framework, Cosmos DB, App Service, Application Insights, Azure DevOps
-APIs/MCP tools, GitHub/Azure Repos/Bitbucket APIs, and provider-native
-passwordless deployment.
+Start with the [Customer Setup Guide](docs/setup/README.md). It is the single
+setup checklist for Azure prerequisites, connector permissions and token
+creation, the ordered PowerShell deployment runbook, and verification.
+Architecture and day-to-day operation remain documented in this technical
+reference and the [User Guide](docs/user-guide/README.md).
 
 ## Repository layout
 
@@ -1964,7 +1958,7 @@ reference material.
 | Human Review SDLC workflow | [docs/HumanReview-SDLC-Workflow.png](docs/HumanReview-SDLC-Workflow.png) |
 | Agent Framework orchestration patterns | [docs/MultiAgent Workflow using Microsoft Agent Framework.jpg](docs/MultiAgent%20Workflow%20using%20Microsoft%20Agent%20Framework.jpg) |
 | Per-agent input/output diagrams | [docs/Agents/](docs/Agents) |
-| Project setup prerequisites | [docs/PROJECT-SETUP-PREREQUISITES.md](docs/PROJECT-SETUP-PREREQUISITES.md) |
+| Customer setup guide | [docs/setup/README.md](docs/setup/README.md) |
 | Full reference deck (PDF) | [docs/Microsoft-AI-Stack-for-SDLC.pdf](docs/Microsoft-AI-Stack-for-SDLC.pdf) |
 
 ## References

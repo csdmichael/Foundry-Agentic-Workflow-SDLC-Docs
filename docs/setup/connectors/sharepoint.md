@@ -1,6 +1,6 @@
 # SharePoint Online Connector Setup
 
-The SharePoint connector stores each SDLC project's documentation in SharePoint Online through Microsoft Graph. In the recommended **`perProjectSite`** mode the factory creates a **dedicated SharePoint communication site for every SDLC project** (`https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-<project-name>-<id>`), then creates an *SDLC Artifacts* folder with one sub-folder per category, a published overview page, and uploads approved documents. In `sharedSite` mode projects get folders and a page inside one configured site instead. It runs as its own micro-service, `<api-app>-sharepoint`.
+The SharePoint connector stores each SDLC project's documentation in SharePoint Online through Microsoft Graph. In the recommended **`perProjectSite`** mode the factory creates a **dedicated SharePoint communication site for every SDLC project** (`https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-<project-name>-<id>`), then creates a document folder named after the project with one sub-folder per category, a published overview page, and uploads approved documents. In `sharedSite` mode projects get folders and a page inside one configured site instead. It runs as its own micro-service, `<api-app>-sharepoint`.
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ The SharePoint connector stores each SDLC project's documentation in SharePoint 
 | Setting | Where | Value |
 | --- | --- | --- |
 | `SHAREPOINT_SITE_URL` | Factory API and `<api-app>-sharepoint` | `https://<sharepoint-tenant>.sharepoint.com` (tenant root, `perProjectSite`) or a site URL (`sharedSite`) |
-| `sharePoint.siteProvisioning` | [integrations.config.json](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/integrations.config.json) | `mode`, `api`, `template`, `sitePathPrefix`, `documentFolder`, `ownerEmail` (see Step 4) |
+| `sharePoint.siteProvisioning` | [integrations.config.json](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/integrations.config.json) | `mode`, `api`, `template`, `sitePathPrefix`, `documentFolder` (empty = project name), `ownerEmail` (see Step 4) |
 | `SHAREPOINT_SITE_OWNER_EMAIL` | App setting | UPN of the person/group owner of new project sites |
 | `SHAREPOINT_TENANT_ID`, `SHAREPOINT_CLIENT_ID` | App settings | Only for the app-registration identity (Step 1) |
 | `SHAREPOINT_CLIENT_CERTIFICATE_PATH` or `SHAREPOINT_CLIENT_SECRET` | Secret | Certificate (recommended) or secret for the app registration |
@@ -133,7 +133,7 @@ Expected: `9492366f-7969-46a4-8d15-ed1a20078fff` and `80819dd8-2b3b-4551-a1ad-27
      "api": "graphBetaSites",
      "template": "sitepagepublishing",
      "sitePathPrefix": "sdlc",
-     "documentFolder": "SDLC Artifacts",
+     "documentFolder": "",
      "locale": "en-US",
      "ownerEmail": "<site-owner-upn>",
      "provisioningTimeoutSeconds": 180,
@@ -185,7 +185,7 @@ Expected (reference environment):
          ok       SHAREPOINT_SITE_OWNER_EMAIL              configured
 [PASS] 5. Connectivity (live read)    ... {"siteUrl":"https://<sharepoint-tenant>.sharepoint.com","driveName":"Documents", ...}
 [PASS] 6a. Project site + folders     site=https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-connector-verification-verify-2 siteCreated=True folders=8
-[PASS] 6b. Upload document            https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-connector-verification-verify-2/Shared%20Documents/SDLC%20Artifacts/Supporting%20Files/connector-verification.md
+[PASS] 6b. Upload document            https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-connector-verification-verify-2/Shared%20Documents/Connector%20Verification/Supporting%20Files/connector-verification.md
 ```
 
 Site creation takes 20–60 seconds. The disposable site is retained for review; delete it in the SharePoint admin center (**Active sites → select → Delete**).
@@ -196,7 +196,7 @@ Site creation takes 20–60 seconds. The disposable site is retained for review;
 | --- | --- | --- |
 | New site listed | `https://<sharepoint-tenant>-admin.sharepoint.com/_layouts/15/online/AdminHome.aspx#/siteManagement/view/ALL%20SITES` | `sdlc-<project>-<id>`, Communication site, *Created from: API* |
 | Overview page | `https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-<project>-<id>/SitePages/agentic-sdlc-<project>-<id>.aspx` | Project description and links to eight category folders |
-| Folders | `https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-<project>-<id>/Shared%20Documents/SDLC%20Artifacts` | Requirements, Technical Requirements, UX and Design, Architecture and Design, Planning, Testing, Release and Operations, Supporting Files |
+| Folders | `https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-<project>-<id>/Shared%20Documents/<project-name>` | Requirements, Technical Requirements, UX and Design, Architecture and Design, Planning, Testing, Release and Operations, Supporting Files |
 
 ![SharePoint admin center active sites](images/sharepoint/10-sharepoint-admin-active-sites.png)
 *`https://<sharepoint-tenant>-admin.sharepoint.com/_layouts/15/online/AdminHome.aspx#/siteManagement/view/ALL%20SITES`*
@@ -204,8 +204,8 @@ Site creation takes 20–60 seconds. The disposable site is retained for review;
 ![Project site overview page created by the factory](images/sharepoint/11-project-site-overview-page.png)
 *`https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-connector-verification-verify-2/SitePages/agentic-sdlc-connector-verification-verify-2.aspx`*
 
-![SDLC Artifacts category folders](images/sharepoint/12-project-site-artifact-folders.png)
-*`https://<sharepoint-tenant>.sharepoint.com/sites/<project-site>/Shared%20Documents/SDLC%20Artifacts`*
+![Project document folder with category folders](images/sharepoint/12-project-site-artifact-folders.png)
+*`https://<sharepoint-tenant>.sharepoint.com/sites/<project-site>/Shared%20Documents/<project-name>`*
 
 ## API Reference (Swagger)
 

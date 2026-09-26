@@ -15,13 +15,14 @@ Use this checklist to install the **factory application** in your Azure environm
   - [1e. API Management](#1e-api-management)
   - [Additional Services](#additional-services)
 - [2. Connector Setup](#2-connector-setup)
-  - [2a. SharePoint, Optional](#2a-sharepoint-optional)
-  - [2b. Confluence](#2b-confluence)
-  - [2c. Azure DevOps](#2c-azure-devops)
-  - [2d. Jira](#2d-jira)
-  - [2e. GitHub](#2e-github)
-  - [2f. Bitbucket](#2f-bitbucket)
-  - [2g. Azure Resource Manager](#2g-azure-resource-manager)
+  - [Connector overview: hosting, API keys, tests](connectors/README.md)
+  - [SharePoint Online](connectors/sharepoint.md)
+  - [Confluence Cloud](connectors/confluence.md)
+  - [Jira Cloud](connectors/jira.md)
+  - [Azure DevOps](connectors/azure-devops.md)
+  - [GitHub](connectors/github.md)
+  - [Bitbucket Cloud](connectors/bitbucket.md)
+  - [Azure Resource Manager (publish to Azure)](connectors/azure-resource-manager.md)
 - [3. Deploy and Verify](#3-deploy-and-verify)
   - [Customer Configuration](#customer-configuration)
   - [API App Settings](#api-app-settings)
@@ -48,7 +49,8 @@ flowchart LR
     API --> Cosmos[(Cosmos DB: agentic_sdlc / state)]
     API --> APIM[API Management]
     APIM --> Foundry[Foundry: agentic-sdlc]
-    API --> Connectors[Selected connectors]
+    API --> Connectors["Connector services: <api-app>-sharepoint, -confluence, -jira, -ado, -github, -bitbucket, -arm (same plan)"]
+    Connectors --> SOR[Selected systems of record]
     API --> ARM[Azure Resource Manager]
     Pipeline[Release pipeline + OIDC] --> Apps[Generated application hosts]
 ```
@@ -100,7 +102,7 @@ In **Entra admin center > App registrations > New registration**, create the reg
 | `agentic-sdlc-ui` | Single-tenant **Single-page application**. Register `https://<ui-app>.azurewebsites.net/assets/msal-redirect.html`; add `http://localhost:8100/assets/msal-redirect.html` only for local development. MSAL uses authorization code with PKCE; do not enable implicit grants. | Tenant ID and UI application/client ID. |
 | `agentic-sdlc-api` | Register the API, expose `api://<api-client-id>/access_as_user`, and grant the SPA the delegated permission with consent as required by policy. No runtime client secret is needed. | API application/client ID and App ID URI. |
 | Factory deployment identity | Separate app/service principal with **federated credentials**, not a client secret. Trust the factory GitHub repository's protected `production` environment. | Client ID, tenant ID, subscription ID. These go into GitHub Actions configuration, not the API's generic `AZURE_*` settings. |
-| Generated-app deployment identity | Separate, narrowly scoped OIDC identity for generated repositories and target resource group. | `GITHUB_OIDC_CLIENT_ID` / `GITHUB_OIDC_TENANT_ID`, or the provider-specific values in section 2g. |
+| Generated-app deployment identity | Separate, narrowly scoped OIDC identity for generated repositories and target resource group. | `GITHUB_OIDC_CLIENT_ID` / `GITHUB_OIDC_TENANT_ID`, or the provider-specific values in the [Azure Resource Manager guide](connectors/azure-resource-manager.md). |
 | API and APIM identities | Enable **System assigned** under each Azure resource's **Identity** blade. Azure creates their service principals; these are not extra SPA registrations. | Principal/object IDs for role assignments. |
 
 **Current implementation boundary:** the reference SPA sends an Entra **ID token** to the API, and the API does not enforce an API audience/scope. Registering an API does not change that code. Before production, implement and validate API access-token audience/scope enforcement. Application roles are managed through the factory's **User Management / Role Permissions** and seed configuration; Entra app-role assignment alone does not grant factory capabilities.
@@ -113,6 +115,7 @@ In **Entra admin center > App registrations > New registration**, create the reg
 | Production | Prefer **two Linux B3 plans**, one for UI and one for API. | Independent capacity, maintenance, and resource isolation. B3 is the requested starting size, not an availability or load-test guarantee. |
 | Factory API | Python **3.13** on Linux. | Startup: `gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000`. Enable Always On, `/api/health`, system identity, HTTPS, and `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. |
 | Factory UI | Node.js **22 LTS** on Linux, serving the compiled static SPA. | The UI workflow deploys `dist/browser`. Set startup to `pm2 serve /home/site/wwwroot --no-daemon --spa`; verify `/login` and `/showcase` refresh successfully. |
+| Connector services | Seven additional Linux Python 3.13 web apps `<api-app>-<connector>` on the **API's plan**, one worker each, health check `/health` (see [connector overview](connectors/README.md)). | Size the API plan for eight always-on Python workers: B3 is the baseline; keep **Memory percentage** below 80 %. A B1 plan is not sufficient. |
 | API capacity | **One instance and one application worker** for the current reference design. | Do not horizontally scale before distributed queue/lease coordination is implemented and tested. B3 has no deployment slots; use separate apps or an appropriate higher tier if slots are required. |
 
 The factory's B3 plans are **not** controlled by `azureProvisioning.sku`. That setting applies to generated applications and currently defaults to demonstration-tier `F1`. Do not assume changing it to B3 works: the current generated-plan SKU mapping does not include B3. Review generated hosting separately before production release.
@@ -148,179 +151,29 @@ Configure `gateway.baseUrl`, `foundry.projectEndpoint`, and `foundry.accountReso
 
 ## 2. Connector Setup
 
-Enable only selected providers. Configure their non-secret endpoints and policies in the [integration configuration](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/integrations.config.json), then choose the matching **Systems of Record** in Global Settings/project intake. Unused providers should be explicitly disabled and not selected. A `*_LIVE=0` value does **not** override checked-in `useMock: false` to mock mode.
+Every system of record has its **own step-by-step guide**, its **own connector micro-service** (a separate web app on the factory API's App Service plan), its own **Swagger (OpenAPI) contract**, and its own **test script** that proves each step before you continue. Complete only the connectors you select, in this order:
 
-Use the [masked secret-entry script](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/scripts/set-connector-secrets.ps1) from the application repository root. Define this non-secret target once; every secret command below uses it so the script's demo defaults are not used:
+1. Read the [connector overview](connectors/README.md): hosting model, placeholders, API-key handling, and the common test flow.
+2. Complete the credential and permission steps of each selected connector guide below.
+3. Create and deploy the connector web apps ([overview Steps 1–2](connectors/README.md#step-1-create-the-connector-web-apps)).
+4. Run each connector's test script until every check passes ([overview Step 3](connectors/README.md#step-3-test-each-connector)).
 
-```powershell
-$Target = @{ ResourceGroup = '<factory-resource-group>'; ApiAppName = '<api-app>' }
-```
+| Connector | Guide | Credential (recommended) | Swagger | Test script |
+| --- | --- | --- | --- | --- |
+| SharePoint Online | [sharepoint.md](connectors/sharepoint.md) | Managed identity (same tenant) or app registration with certificate; Graph `Sites.ReadWrite.All` + `Sites.Create.All` | [OpenAPI](connectors/openapi/sharepoint.openapi.json) · `https://<api-app>-sharepoint.azurewebsites.net/docs` | `test-sharepoint-connector.ps1` |
+| Confluence Cloud | [confluence.md](connectors/confluence.md) | Scoped Atlassian API token (10 scopes) | [OpenAPI](connectors/openapi/confluence.openapi.json) · `https://<api-app>-confluence.azurewebsites.net/docs` | `test-confluence-connector.ps1` |
+| Jira Cloud | [jira.md](connectors/jira.md) | Unscoped Atlassian API token of a dedicated account | [OpenAPI](connectors/openapi/jira.openapi.json) · `https://<api-app>-jira.azurewebsites.net/docs` | `test-jira-connector.ps1` |
+| Azure DevOps | [azure-devops.md](connectors/azure-devops.md) | Managed identity (PAT only as a documented exception) | [OpenAPI](connectors/openapi/ado.openapi.json) · `https://<api-app>-ado.azurewebsites.net/docs` | `test-ado-connector.ps1` |
+| GitHub | [github.md](connectors/github.md) | Fine-grained PAT of a machine account (classic PAT supported) | [OpenAPI](connectors/openapi/github.openapi.json) · `https://<api-app>-github.azurewebsites.net/docs` | `test-github-connector.ps1` |
+| Bitbucket Cloud | [bitbucket.md](connectors/bitbucket.md) | Scoped Bitbucket API token (10 scopes) or access token | [OpenAPI](connectors/openapi/bitbucket.openapi.json) · `https://<api-app>-bitbucket.azurewebsites.net/docs` | `test-bitbucket-connector.ps1` |
+| Azure Resource Manager (publish to Azure) | [azure-resource-manager.md](connectors/azure-resource-manager.md) | Managed identity with Website Contributor + Web Plan Contributor; OIDC for pipelines | [OpenAPI](connectors/openapi/azure-arm.openapi.json) · `https://<api-app>-arm.azurewebsites.net/docs` | `test-azure-arm-connector.ps1` |
 
-`-Gui` opens a masked Windows dialog. Do not paste the secret into the command itself. The script also leaves credentials in the current shell's environment: close that shell after verification and use a fresh shell for automated tests. Use `-SessionOnly` only for a deliberate local probe; it does not configure Azure.
+Common rules for all connectors:
 
-### 2a. SharePoint, Optional
-
-| Step | Action | Required value or access |
-| --- | --- | --- |
-| 1 | Select an existing SharePoint Online site and default document library. | An M365 tenant with SharePoint entitlement; site and API managed identity in the **same tenant** for this setup. A cross-tenant managed identity is not a supported shortcut. |
-| 2 | Grant the API managed identity a Microsoft Graph **application** role through a tenant administrator. | **`Sites.ReadWrite.All`**, with admin consent/app-role assignment to the managed identity service principal. No delegated login, shared user password, or connector client secret. |
-| 3 | Set the target and enable live calls. | `SHAREPOINT_SITE_URL=https://<tenant>.sharepoint.com/sites/<site>`; `SHAREPOINT_LIVE=1`; `sharePoint.projectRootFolder`, normally `Agentic SDLC Projects`. |
-| 4 | Verify from the deployed API identity. | Resolve the site and default drive, then explicitly approve a disposable page/folder/file test. See section 3. |
-
-The connector creates a modern project page and eight category folders, then publishes approved files. `Sites.ReadWrite.All` is tenant-wide: obtain security approval. A narrower `Sites.Selected` design needs endpoint compatibility and explicit site-grant validation; it is not the documented drop-in configuration. A licensed administrator provisions the site, but the runtime does not need a shared managed user account.
-
-### 2b. Confluence
-
-| Configure | Value / permission |
-| --- | --- |
-| Account | Dedicated Atlassian automation account with Confluence product access. Grant **view space, add/update pages and attachments**, and delete owned pages/folders for cleanup. Restricted parent pages must permit the account. |
-| Site/space | `CONFLUENCE_BASE_URL=https://<site>.atlassian.net/wiki`; `CONFLUENCE_SPACES_URL=https://<site>.atlassian.net/wiki/spaces`; set `confluence.spaceKey` and `spaceName`. Prefer an administrator-created space and **`createSpaceIfMissing: false`**. |
-| Cloud ID | Set **`CONFLUENCE_CLOUD_ID`** to your site's ID, obtainable from `https://<site>.atlassian.net/_edge/tenant_info`. This is an ID, not a secret. |
-| Credential | **`CONFLUENCE_EMAIL` + `CONFLUENCE_API_TOKEN`**, with **Confluence scopes**; `CONFLUENCE_LIVE=1`. API routing becomes `https://api.atlassian.com/ex/confluence/<cloud-id>/wiki/...`; browser links stay on the tenant URL. |
-
-| Scope group | Select these exact scopes |
-| --- | --- |
-| Space lookup | `read:space:confluence` |
-| Page lifecycle | `read:page:confluence`, `write:page:confluence`, `delete:page:confluence` |
-| Folder lifecycle / hierarchy | `write:folder:confluence`, `delete:folder:confluence`, `read:hierarchical-content:confluence` |
-| Attachments | `read:content-details:confluence`, `write:attachment:confluence` |
-| Optional space creation | `write:space:confluence`, plus account permission to create spaces, **only if** `createSpaceIfMissing` is enabled. This makes ten scopes for the full provisioning path. |
-
-| Token step | What to do |
-| --- | --- |
-| 1 | Sign in as the automation account at [Atlassian API tokens](https://id.atlassian.com/manage-profile/security/api-tokens). Complete identity verification if prompted. |
-| 2 | Choose **Create API token with scopes**. Name it for this factory/environment, choose the shortest practical expiry, then select **Confluence**. |
-| 3 | Select the scopes above, review, and create. Token scopes do not replace account/space permissions. |
-| 4 | Copy once into the masked dialog launched below. Record the expiry and owner, not the token, in the handover checklist. |
-
-```powershell
-.\scripts\set-connector-secrets.ps1 @Target -Confluence -ConfluenceCloudId '<your-cloud-id>' -Gui
-```
-
-![Atlassian's public instructions for creating a scoped Confluence token](images/confluence-token-steps.png)
-*Reference screenshot of [Atlassian's scoped-token instructions](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/#Create-an-API-token-with-scopes), captured 14 September 2026. This is not a signed-in account screen; no token is shown.*
-
-### 2c. Azure DevOps
-
-**Recommended: managed identity, not a PAT.** The client uses `DefaultAzureCredential` for Azure DevOps when **`ADO_PAT` is absent**. A leftover PAT takes precedence over managed identity.
-
-| Step | Managed-identity setup |
-| --- | --- |
-| 1 | Connect the Azure DevOps organization to the API identity's Entra tenant. In **Organization settings > Users > Add users**, explicitly add the API service principal/managed identity. Use its **principal/object ID**, not the app registration object ID. |
-| 2 | Assign an access level directly: **Basic** for standard work, plus **Basic + Test Plans** or another appropriate entitlement for the full Test Plans feature set. Azure RBAC roles do not grant ADO permissions. |
-| 3 | Grant the enabled capabilities below at project/repository scope, with organization-level **Create new projects** only when provisioning new projects is enabled. Project deletion and contributor administration need additional explicit rights. |
-| 4 | Set `ADO_ORGANIZATION_URL=https://dev.azure.com/<organization>`, `ADO_LIVE=1`, and remove `ADO_PAT`. Verify through the deployed API, not just the operator's local Azure CLI identity. |
-| 5 | For Azure Pipelines releases, pre-create an **Azure Resource Manager workload identity federation** service connection and set `ADO_AZURE_SERVICE_CONNECTION`. Grant use to the intended pipeline only. |
-
-If organizational constraints prevent managed identity, approve a **short-lived PAT exception** from a dedicated licensed account. In ADO, select **User settings > Personal access tokens > New Token**, choose the **specific organization**, a purpose/expiry, and **Custom defined** scopes below. Select **Show all scopes** when needed, create, then copy once into the masked dialog. Do not select Full access.
-
-| Enabled capability | PAT scope for the exception path |
-| --- | --- |
-| Project/team creation and management | Project and Team: Read, write, manage (`vso.project_manage`) |
-| Backlog, iterations, queries, delivery plans | Work Items: Full (`vso.work_full`) |
-| Azure Repos, branches, commits, PRs | Code: Read, write, manage (`vso.code_manage`) |
-| Plans, suites, cases, runs, results | Test Management: Read and write (`vso.test_write`) |
-| Pipeline definitions and queueing | Build: Read and execute (`vso.build_execute`) |
-| Dashboards / wiki | Team Dashboards: Manage (`vso.dashboards_manage`); Wiki: Read and write (`vso.wiki_write`) |
-| Existing service connection lookup | Service Connections: Read (`vso.serviceendpoint`), plus use permission on the connection |
-| Optional project-access administration | Graph: Manage (`vso.graph_manage`); Identity: Read (`vso.identity`) |
-
-```powershell
-.\scripts\set-connector-secrets.ps1 @Target -AdoPat -Gui
-```
-
-The PAT only narrows its owner's rights; it does not create missing product permissions. A `TF400813` error requires checking organization membership and tenant alignment, not automatically granting a broader token. See [managed identity setup](https://learn.microsoft.com/azure/devops/integrate/get-started/authentication/service-principal-managed-identity) and [PAT creation](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate).
-
-### 2d. Jira
-
-| Configure | Value / permission |
-| --- | --- |
-| Account | Dedicated licensed Jira automation user. Use a separate credential from Confluence/Bitbucket. |
-| Project work | **Browse Projects, Create Issues, Edit Issues, Link Issues**; **Add Comments / Transition Issues** where those actions are enabled. For Scrum, grant **Manage Sprints** and the board's relevant project permissions. |
-| Project provisioning | The full create/delete-project path needs the applicable **Administer Jira** global permission; project administration alone is not a general substitute. Prefer existing projects and constrained rights when automatic provisioning is not needed. |
-| Configuration | `JIRA_BASE_URL=https://<site>.atlassian.net/jira`; `JIRA_PROJECTS_URL=https://<site>.atlassian.net/jira/software/projects`; **`JIRA_EMAIL` + `JIRA_API_TOKEN`**; `JIRA_LIVE=1`. Tests are represented as Jira issues; an Xray/Zephyr installation is not assumed. |
-| Token compatibility | This version calls `https://<site>.atlassian.net/rest/api/3/...` using Basic authentication. Use an **unscoped API token** for this client. Scoped Jira tokens require the `api.atlassian.com/ex/jira/<cloud-id>` gateway, which this client does not currently support. |
-
-| Token step | What to do |
-| --- | --- |
-| 1 | Open [Atlassian API tokens](https://id.atlassian.com/manage-profile/security/api-tokens) as the dedicated Jira user. |
-| 2 | Choose **Create API token**, without scopes; set a purpose and short expiry. There is no separate scope checklist for this token: the account permissions above control access. |
-| 3 | Create and copy once into the dialog below. Enter the **same account email** when prompted. |
-| 4 | If your organization permits scoped tokens only, **stop here** and arrange the connector gateway update before enabling Jira. Do not broaden organization policy to work around this limitation. Atlassian service-account credentials require scopes, so they are not a drop-in substitute for this current path. |
-
-```powershell
-.\scripts\set-connector-secrets.ps1 @Target -Jira -Gui
-```
-
-![Atlassian's public instructions for creating an unscoped Jira token](images/jira-token-steps.png)
-*Reference screenshot of [Atlassian's unscoped-token instructions](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/#Create-an-API-token), captured 14 September 2026. This is not a signed-in account screen; no token is shown.*
-
-### 2e. GitHub
-
-| Configure | Details |
-| --- | --- |
-| Owner / endpoints | Set `github.org` to your organization or user owner; `accountType: auto` supports either. Set `GITHUB_REPO_BASE_URL=https://github.com/<owner>` and `GITHUB_API_BASE_URL=https://api.github.com` if overriding defaults. Use private repositories for customer code. |
-| Current full-lifecycle credential | `GITHUB_PAT`, owned by a dedicated authorized account; `GITHUB_LIVE=1`. Classic scopes: **`repo`**, **`workflow`**, and **`delete_repo` only for governed repository cleanup**. Authorize organization SSO and any token approval policy. |
-| Narrower credentials | Prefer fine-grained/app-based access where the required routes support it. For static repositories, validate Metadata read and applicable Administration, Contents, Pull requests, Issues, Actions, Workflows, Webhooks, Secrets, Variables, and Environments write permissions. Test dynamic repository creation separately; this client does not implement GitHub App installation-token refresh. Do not claim an App ID alone replaces `GITHUB_PAT`. |
-| Create a PAT | **GitHub Settings > Developer settings > Personal access tokens > Tokens (classic) > Generate new token (classic)**. Choose name, expiry, and approved scopes above; create and enter via the masked command below. Follow [GitHub's current token instructions](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). |
-| Actions / callbacks | Enable approved Actions, configure the `production` environment and Azure OIDC trust. For callbacks, set `SDLC_API_PUBLIC_URL=https://<api-app>.azurewebsites.net` and a separate random **`GITHUB_WEBHOOK_SECRET`**; callback route is `/api/webhooks/github`. Add the signing secret through Key Vault/App Service, not the PAT prompt. |
-| Optional Copilot | Requires Copilot cloud-agent entitlement and repository/organization enablement. The Agent Tasks API requires supported **user-to-server** credentials, not GitHub App installation tokens. Its GitHub-hosted inference is the explicit APIM exception. |
-
-```powershell
-.\scripts\set-connector-secrets.ps1 @Target -GitHubPat -Gui
-```
-
-### 2f. Bitbucket
-
-Use a **Bitbucket-scoped API token** paired with the Atlassian account email. Do not create legacy app passwords. The current script calls this Basic-auth path **`AppPassword`** and stores the token in **`BITBUCKET_APP_PASSWORD`**; those are compatibility names, not a recommendation to use an app password.
-
-| Configure | Value / account rights |
-| --- | --- |
-| Workspace | `BITBUCKET_WORKSPACE=<workspace-slug>`; update the Bitbucket workspace/repository base URLs in integration configuration. The automation account must be allowed to create repositories and administer the repositories it creates. |
-| Credential | `BITBUCKET_USERNAME=<Atlassian-account-email>` + `BITBUCKET_APP_PASSWORD=<API-token>`; `BITBUCKET_LIVE=1`. `BITBUCKET_EMAIL` is an optional commit-author address. |
-| Pipelines | Ensure Pipelines is enabled/enrolled, pipeline minutes are available, and account/workspace 2SV policies are satisfied where required. Token scopes alone do not complete first-run enrollment. |
-| Alternative | Workspace/project/repository access tokens use **Bearer** `BITBUCKET_ACCESS_TOKEN`. Their product tier, creation reach, and identity-probe support differ; validate before selecting one for dynamic provisioning. Never configure Bearer and Basic modes together. |
-
-| Permission | Exact API-token scope |
-| --- | --- |
-| Identity | `read:user:bitbucket` |
-| Repository read/write | `read:repository:bitbucket`, `write:repository:bitbucket` |
-| Repository creation/admin and Pipelines enablement | `admin:repository:bitbucket` |
-| Workflow-owned repository cleanup | `delete:repository:bitbucket` |
-| Pull requests / merge | `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` |
-| Pipeline status / runs | `read:pipeline:bitbucket`, `write:pipeline:bitbucket` |
-| Pipeline variables | `admin:pipeline:bitbucket` |
-
-Select read scopes explicitly; write/admin scopes do not imply them. Workspace administration is not required just to manage repositories. See [Bitbucket's scope descriptions](https://support.atlassian.com/bitbucket-cloud/docs/api-token-permissions/).
-
-| Token step | What to do |
-| --- | --- |
-| 1 | In Bitbucket, open **Profile > Account settings > Security > Create and manage API tokens**. |
-| 2 | Select **Create API token with scopes**, supply purpose/expiry, and select **Bitbucket**. |
-| 3 | Select the scopes above and the intended workspace restriction where offered, review, and create. |
-| 4 | Copy once into the masked dialog below; supply the Atlassian **email**, even though the prompt says username. The script removes stale settings from the opposite authentication mode. |
-
-```powershell
-.\scripts\set-connector-secrets.ps1 @Target -Bitbucket -BitbucketAuthMode AppPassword -BitbucketUsername '<automation-email>' -Gui
-```
-
-![Bitbucket's public instructions for creating a scoped API token](images/bitbucket-token-steps.png)
-*Reference screenshot of [Bitbucket's token-creation instructions](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/), captured 14 September 2026. This is not a signed-in account screen; no token is shown.*
-
-### 2g. Azure Resource Manager
-
-The **API identity provisions infrastructure**; the **repository pipeline identity publishes code**. Configure both. ARM provisioning is not one of the six status probes, and there is no `AZURE_LIVE` switch or `--only azure` option.
-
-| Identity / provider | Required setup | Verification |
-| --- | --- | --- |
-| API managed identity | Set `azureProvisioning.enabled: true`, `useMock: false`, and the customer `subscriptionId`, `resourceGroup`, `location`. Grant **Website Contributor + Web Plan Contributor** on the approved generated-app resource group. | Role inventory and an approved disposable project's Release stage create/reuse only the intended App Service resources. |
-| Role assignment automation, if used | Grant narrowly scoped **Role Based Access Control Administrator** only if the selected operation actually creates Azure role assignments. | Do not grant Owner merely to clear a 403; inspect the missing action. |
-| GitHub release identity | Set **`GITHUB_OIDC_CLIENT_ID` / `GITHUB_OIDC_TENANT_ID`** on the API. Grant deployment rights on generated hosts. Trust issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, and the **exact repository/environment subject**. | Generated repositories use identity-qualified subjects. Do not substitute the factory repo's subject; match actual claims and the generated contract. |
-| Federated credential management | For automatic GitHub trust creation, API identity must own the target OIDC app registration and have Graph **`Application.ReadWrite.OwnedBy`** application permission/admin consent. Alternatively, a platform administrator pre-provisions the exact credential. | Use `GITHUB_FIC_PREPROVISIONED=1` only after that exact trust has been independently verified; it is not an authentication bypass. |
-| Azure Pipelines | Pre-provision an ARM **workload identity federation** service connection, scoped to the target Azure resources. Set **`ADO_AZURE_SERVICE_CONNECTION`** and authorize its use by the generated pipeline. | Successful service-connection validation and a deployment run. An ADO PAT is not an Azure deployment credential. |
-| Bitbucket Pipelines | Set **`BITBUCKET_AZURE_CLIENT_ID` / `BITBUCKET_AZURE_TENANT_ID`** and exact `azureOidc` issuer, audience, subject, repository UUID, and deployment-environment UUID from trusted provider metadata. | Current code requires audience `api://AzureADTokenExchange`; a token with Bitbucket's workspace audience will fail. Validate a supported federation design before promising Azure release. Never invent a matching claim or mark externally managed trust before verification. |
-
-Do **not** set `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, or `AZURE_CLIENT_SECRET` on the factory API for pipeline login. In particular, `AZURE_CLIENT_ID` can redirect `DefaultAzureCredential` to a user-assigned identity. Use the dedicated provider-specific settings above; pipeline workflows receive their own `AZURE_*` values.
+- Configure non-secret endpoints and policies in the [integration configuration](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/integrations.config.json), then choose the matching **Systems of Record** in Global Settings/project intake. Unused providers should be explicitly disabled and not selected. A `*_LIVE=0` value does **not** override checked-in `useMock: false` to mock mode.
+- Enter secrets with the [masked secret-entry script](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/scripts/set-connector-secrets.ps1) from the application repository root, always with an explicit target so the script's demo defaults are not used: `$Target = @{ ResourceGroup = '<factory-resource-group>'; ApiAppName = '<api-app>' }`. `-Gui` opens a masked dialog; never paste a secret into the command itself, and close the shell after use.
+- Prefer identities without stored secrets (managed identity, workload identity federation). Where a token is unavoidable, use a dedicated automation account, the narrowest scopes in the guide, the shortest practical expiry, Key Vault storage, and a named rotation owner.
+- After changing a credential on the factory API, re-run `./scripts/connector-services/New-ConnectorServiceApps.ps1 ... -Services <name> -CopyConnectorSettings` so the connector service receives the same value, then re-run its test script.
 
 ## 3. Deploy and Verify
 
@@ -386,6 +239,7 @@ gh auth login
 | 5 | Selected connector secrets; requires the API app | Run only the relevant `set-connector-secrets.ps1 @Target ... -Gui` commands in section 2. Configure managed-identity-only connectors without secrets. | Correct environment targeted, no credential printed; settings saved. Close the credential-bearing shell when finished. |
 | 6 | Foundry agents; requires models + JSON endpoints + identity/network | Optional explicit first sync: `.\.venv\Scripts\python.exe api\scripts\sync_foundry_agents.py` from an authorized network. | Each enabled agent reports `created` or `existing`. The API workflow runs this automatically too. Use `--update-existing` only when intentionally publishing updated definitions. |
 | 7 | API code | `gh workflow run deploy-api.yml --repo $FactoryRepo --ref main` | **Deploy API** passes tests, checks Cosmos/repair-key settings, synchronizes agents, and deploys. Restart and verify health below. |
+| 7a | Connector services; requires the API app and connector credentials | `./scripts/connector-services/New-ConnectorServiceApps.ps1 -ResourceGroup $ResourceGroup -ApiAppName $ApiApp -Subscription $SubscriptionId -CopyConnectorSettings -GrantArmRoles`, then `gh workflow run deploy-connector-<name>.yml --repo $FactoryRepo --ref main` for each selected connector | Each `https://<api-app>-<suffix>.azurewebsites.net/health` returns `ok`/`live`; each `test-<connector>-connector.ps1` passes. |
 | 8 | UI code; requires a healthy API and rebuilt host mapping | `gh workflow run deploy-ui.yml --repo $FactoryRepo --ref main` | **Deploy UI** builds and publishes `dist/browser`. UI startup serves the SPA; sign-in calls the customer API. |
 | 9 | Acceptance | Complete the verification table below using selected connectors and one approved disposable project. | Real model response via APIM, expected approval behavior, correct external records, successful governed release and health checks. |
 
@@ -425,6 +279,7 @@ Run the UI request after **Deploy UI** completes. A static HTTP 200 is not proof
 | Authentication | Sign in through Entra with a customer account; request a real external-user OTP where enabled. Check App Owner/regular-user permissions. | Expected role/capabilities; email actually delivered; no bypass. Complete the production token-validation gate below. |
 | Foundry / APIM | Check Agent Configuration and Model Suggestions, then run an approved small project through its first eligible agent. | All 14 configured agents resolve, three default model deployments available, real response via APIM, correlated run evidence. `/api/health` alone does not test a model. |
 | Connectors, deployed identity | In the authenticated application, inspect connector status from `/api/integrations/status` using an account with `integrations.read`. | Selected providers show live/connected. Ignore intentionally disabled providers; no secret should be returned. |
+| Connector services | For each selected connector run `./scripts/connector-services/test-<connector>-connector.ps1 -ResourceGroup $ResourceGroup -ApiAppName $ApiApp`, then once with `-Create` (and `-Cleanup` where supported) against disposable resources. | All steps `PASS`; exit code 0. Details per connector in [connector guides](connectors/README.md). |
 | Connectors, local utility | From a configured shell: `.\.venv\Scripts\python.exe api\scripts\verify_connectors.py --only <provider>`; allowed values: `sharepoint`, `confluence`, `ado`, `jira`, `github`, `bitbucket`. | `PASS` and exit code 0 for selected providers. This uses **local** credentials/configuration, not App Service settings or its managed identity. |
 | Probe safety | Keep Confluence `createSpaceIfMissing: false` for a read-only test. Bitbucket needs an accessible existing repository for its Pipelines preflight. | No remote objects created by read-only checks. `--create` is opt-in and requires approved disposable targets and cleanup. |
 | Generated release | Approve one disposable project's release, verify ARM resources, exact PR/commit/pipeline evidence, published UI/API, and the generated README URLs. | Provider-native pipeline successfully publishes and smoke-tests the generated app. Provisioning resources alone is not deployment success. |

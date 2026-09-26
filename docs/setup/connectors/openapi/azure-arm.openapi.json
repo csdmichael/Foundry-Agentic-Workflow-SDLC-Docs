@@ -1,0 +1,1683 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Azure Resource Manager Connector Service",
+    "description": "Provisions Azure App Service hosting for generated applications and publishes their code: App Service\nplans, Linux web apps, app settings, startup commands, managed identities, role assignments, and zip\ndeployments through Kudu using Entra authentication.\n\nIdentity: the service's system-assigned managed identity (no client secret) with **Website\nContributor** and **Web Plan Contributor** on the target resource group configured in\n`azureProvisioning.subscriptionId` / `resourceGroup`.\n\n**Setup guide:** [Azure Resource Manager setup](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/blob/main/docs/setup/connectors/azure-resource-manager.md)\n\n**Authentication:** send `X-Connector-Api-Key: <CONNECTOR_SERVICE_API_KEY>` on every request except `GET /health`. Optionally send `X-Caller` (recorded in the audit log) and `x-correlation-id` (echoed back).",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe (anonymous)",
+        "description": "Returns 200 when the process is running. Makes no outbound call and returns no configuration.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Configuration readiness",
+        "description": "Checks that the connector is enabled and live and that every required setting is present. Returns 200 when ready and 503 otherwise. Setting values are never returned.",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/health/connectivity": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Live, read-only connectivity probe",
+        "description": "Authenticates to the external system and performs one read-only call. Returns 200 when the credential and permissions are accepted, 409 in mock/disabled mode, and 502/503 on failure.",
+        "operationId": "connectivity_health_connectivity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled or in mock mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "External system rejected the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Credential unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/resource-group": {
+      "get": {
+        "tags": [
+          "scope"
+        ],
+        "summary": "Read the configured target resource group",
+        "operationId": "resource_group_api_v1_resource_group_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Resource Group Api V1 Resource Group Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/plans": {
+      "post": {
+        "tags": [
+          "hosting"
+        ],
+        "summary": "Create (or reuse) a Linux App Service plan",
+        "operationId": "create_plan_api_v1_plans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webapps": {
+      "post": {
+        "tags": [
+          "hosting"
+        ],
+        "summary": "Create (or reuse) a Linux web app",
+        "operationId": "create_web_app_api_v1_webapps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAppCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webapps/{name}": {
+      "get": {
+        "tags": [
+          "hosting"
+        ],
+        "summary": "Get a web app",
+        "operationId": "get_web_app_api_v1_webapps__name__get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Web App Api V1 Webapps  Name  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webapps/{name}/appsettings": {
+      "put": {
+        "tags": [
+          "configuration"
+        ],
+        "summary": "Merge app settings (write-only values)",
+        "operationId": "set_app_settings_api_v1_webapps__name__appsettings_put",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingsBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Set App Settings Api V1 Webapps  Name  Appsettings Put"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webapps/{name}/startup-command": {
+      "put": {
+        "tags": [
+          "configuration"
+        ],
+        "summary": "Set the startup command",
+        "operationId": "set_startup_api_v1_webapps__name__startup_command_put",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartupCommandBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Set Startup Api V1 Webapps  Name  Startup Command Put"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webapps/{name}/managed-identity": {
+      "post": {
+        "tags": [
+          "configuration"
+        ],
+        "summary": "Enable the system-assigned identity",
+        "operationId": "enable_identity_api_v1_webapps__name__managed_identity_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Enable Identity Api V1 Webapps  Name  Managed Identity Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/role-assignments": {
+      "post": {
+        "tags": [
+          "configuration"
+        ],
+        "summary": "Grant a built-in App Service role at resource-group scope",
+        "description": "Only `Website Contributor` and `Web Plan Contributor` are allowed. Requires RBAC write permission.",
+        "operationId": "assign_role_api_v1_role_assignments_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "principalId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36,
+              "title": "Principalid"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Website Contributor or Web Plan Contributor",
+              "title": "Role"
+            },
+            "description": "Website Contributor or Web Plan Contributor"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Assign Role Api V1 Role Assignments Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webapps/{name}/deployments/zip": {
+      "post": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Publish a zip package to the web app",
+        "description": "Uploads the package to Kudu (`/api/zipdeploy?isAsync=true`) with the service's Entra token; basic publishing credentials are not used. Poll `GET /webapps/{name}/deployments/latest` for completion.",
+        "operationId": "deploy_zip_api_v1_webapps__name__deployments_zip_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_deploy_zip_api_v1_webapps__name__deployments_zip_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webapps/{name}/deployments/latest": {
+      "get": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Latest deployment status",
+        "operationId": "latest_deployment_api_v1_webapps__name__deployments_latest_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Latest Deployment Api V1 Webapps  Name  Deployments Latest Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webapps/{name}/restart": {
+      "post": {
+        "tags": [
+          "publish"
+        ],
+        "summary": "Restart the web app",
+        "operationId": "restart_api_v1_webapps__name__restart_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+              "examples": [
+                "sdlc-verify-api"
+              ],
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Restart Api V1 Webapps  Name  Restart Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/resources": {
+      "delete": {
+        "tags": [
+          "hosting"
+        ],
+        "summary": "Delete a disposable web app or plan",
+        "description": "Destructive. Only Microsoft.Web/sites or serverfarms inside the configured resource group; `confirm` must be DELETE.",
+        "operationId": "delete_resource_api_v1_resources_delete",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "title": "Resourceid"
+            }
+          },
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Confirm"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Resource Api V1 Resources Delete"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AppSettingsBody": {
+        "properties": {
+          "settings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Settings",
+            "description": "Merged into existing settings. Values are never echoed back."
+          }
+        },
+        "type": "object",
+        "required": [
+          "settings"
+        ],
+        "title": "AppSettingsBody"
+      },
+      "Body_deploy_zip_api_v1_webapps__name__deployments_zip_post": {
+        "properties": {
+          "package": {
+            "type": "string",
+            "format": "binary",
+            "title": "Package",
+            "description": "Zip package"
+          }
+        },
+        "type": "object",
+        "required": [
+          "package"
+        ],
+        "title": "Body_deploy_zip_api_v1_webapps__name__deployments_zip_post"
+      },
+      "ConnectivityResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "connected or failed",
+            "examples": [
+              "connected"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "durationMs": {
+            "type": "integer",
+            "title": "Durationms"
+          },
+          "identity": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Identity",
+            "description": "Non-secret identity summary"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "mode",
+          "durationMs"
+        ],
+        "title": "ConnectivityResponse"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "correlationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlationid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LivenessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "examples": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service",
+            "examples": [
+              "jira-connector"
+            ]
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector",
+            "examples": [
+              "jira"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "examples": [
+              "1.0.0"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "live, mock, or disabled",
+            "examples": [
+              "live"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "version",
+          "mode",
+          "timestamp"
+        ],
+        "title": "LivenessResponse"
+      },
+      "PlanCreateBody": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9-]+$",
+            "title": "Name",
+            "examples": [
+              "sdlc-verify-plan"
+            ]
+          },
+          "sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku",
+            "description": "F1, B1, S1 or P0v3. Defaults to azureProvisioning.sku",
+            "examples": [
+              "B1"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "PlanCreateBody"
+      },
+      "ReadinessCheckModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "JIRA_API_TOKEN"
+            ]
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ok"
+        ],
+        "title": "ReadinessCheckModel"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "ready or not_ready",
+            "examples": [
+              "ready"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessCheckModel"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "mode",
+          "checks"
+        ],
+        "title": "ReadinessResponse"
+      },
+      "StartupCommandBody": {
+        "properties": {
+          "command": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Command",
+            "examples": [
+              "gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "command"
+        ],
+        "title": "StartupCommandBody"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WebAppCreateBody": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 2,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$",
+            "title": "Name",
+            "examples": [
+              "sdlc-verify-api"
+            ]
+          },
+          "planName": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Planname",
+            "examples": [
+              "sdlc-verify-plan"
+            ]
+          },
+          "runtime": {
+            "type": "string",
+            "title": "Runtime",
+            "description": "linuxFxVersion",
+            "examples": [
+              "PYTHON|3.13",
+              "NODE|22-lts"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "planName",
+          "runtime"
+        ],
+        "title": "WebAppCreateBody"
+      }
+    },
+    "securitySchemes": {
+      "ConnectorApiKey": {
+        "type": "apiKey",
+        "description": "Service API key. The value is the `CONNECTOR_SERVICE_API_KEY` app setting of this connector service. Store it in Key Vault; never paste it into tickets or chat.",
+        "in": "header",
+        "name": "X-Connector-Api-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness, configuration readiness, and live connectivity probes. Use these after every setup step: `/health` proves the process is running, `/health/ready` proves required settings exist, and `/health/connectivity` proves the credential is accepted by the external system."
+    },
+    {
+      "name": "scope",
+      "description": "Configured subscription and resource group"
+    },
+    {
+      "name": "hosting",
+      "description": "App Service plans and web apps"
+    },
+    {
+      "name": "configuration",
+      "description": "Settings, startup, identity and roles"
+    },
+    {
+      "name": "publish",
+      "description": "Code publishing and restart"
+    }
+  ]
+}

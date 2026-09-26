@@ -1,0 +1,1011 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SharePoint Connector Service",
+    "description": "Publishes Agentic SDLC project documentation to SharePoint Online through Microsoft Graph. In\n`perProjectSite` mode every SDLC project gets its own SharePoint site; in `sharedSite` mode projects\nget folders and a page inside `SHAREPOINT_SITE_URL`.\n\nIdentity: the App Service managed identity (same tenant) or an app registration in the SharePoint\ntenant (`SHAREPOINT_TENANT_ID`, `SHAREPOINT_CLIENT_ID`, `SHAREPOINT_CLIENT_SECRET` or\n`SHAREPOINT_CLIENT_CERTIFICATE_PATH`). Microsoft Graph application roles: `Sites.ReadWrite.All`, plus\n`Sites.Create.All` for per-project sites.\n\n**Setup guide:** [SharePoint setup](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/blob/main/docs/setup/connectors/sharepoint.md)\n\n**Authentication:** send `X-Connector-Api-Key: <CONNECTOR_SERVICE_API_KEY>` on every request except `GET /health`. Optionally send `X-Caller` (recorded in the audit log) and `x-correlation-id` (echoed back).",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe (anonymous)",
+        "description": "Returns 200 when the process is running. Makes no outbound call and returns no configuration.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Configuration readiness",
+        "description": "Checks that the connector is enabled and live and that every required setting is present. Returns 200 when ready and 503 otherwise. Setting values are never returned.",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/health/connectivity": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Live, read-only connectivity probe",
+        "description": "Authenticates to the external system and performs one read-only call. Returns 200 when the credential and permissions are accepted, 409 in mock/disabled mode, and 502/503 on failure.",
+        "operationId": "connectivity_health_connectivity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled or in mock mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "External system rejected the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Credential unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sites/resolve": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Resolve a SharePoint site by URL (read-only)",
+        "operationId": "resolve_site_api_v1_sites_resolve_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Absolute site URL. Defaults to SHAREPOINT_SITE_URL.",
+              "title": "Url"
+            },
+            "description": "Absolute site URL. Defaults to SHAREPOINT_SITE_URL."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Resolve Site Api V1 Sites Resolve Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/site": {
+      "post": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Create (or reuse) the dedicated SharePoint site for a project",
+        "description": "Creates `https://<tenant>/sites/<prefix>-<project-name>-<id>` using the configured creation API (`graphBetaSites` needs Sites.Create.All; `m365Group` needs Group.ReadWrite.All). Returns 201 when created and 200 when the site already existed.",
+        "operationId": "ensure_site_api_v1_projects_site_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/projects/structure": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Create (or reuse) the project folders and overview page",
+        "description": "In `perProjectSite` mode, first ensures the project's dedicated site; then creates the document folder, one folder per category, and a published overview page. Idempotent.",
+        "operationId": "ensure_structure_api_v1_projects_structure_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ensure Structure Api V1 Projects Structure Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/projects/documents": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload a document into a project category folder",
+        "operationId": "publish_document_api_v1_projects_documents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentUploadBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Publish Document Api V1 Projects Documents Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/projects/resources": {
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Delete workflow-created project resources",
+        "description": "Destructive. Deletes the given page and folder; with `groupId`, deletes the Microsoft 365 group and its site.",
+        "operationId": "delete_resources_api_v1_projects_resources_delete",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Siteid"
+            }
+          },
+          {
+            "name": "driveId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Document library id",
+              "default": "",
+              "title": "Driveid"
+            },
+            "description": "Document library id"
+          },
+          {
+            "name": "pageId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Pageid"
+            }
+          },
+          {
+            "name": "folderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Folderid"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Only for sites created with the m365Group API",
+              "default": "",
+              "title": "Groupid"
+            },
+            "description": "Only for sites created with the m365Group API"
+          },
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Must be the literal value DELETE",
+              "title": "Confirm"
+            },
+            "description": "Must be the literal value DELETE"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Resources Api V1 Projects Resources Delete"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConnectivityResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "connected or failed",
+            "examples": [
+              "connected"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "durationMs": {
+            "type": "integer",
+            "title": "Durationms"
+          },
+          "identity": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Identity",
+            "description": "Non-secret identity summary"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "mode",
+          "durationMs"
+        ],
+        "title": "ConnectivityResponse"
+      },
+      "DocumentUploadBody": {
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category key from the connector's categoryFolders configuration",
+            "default": "supporting",
+            "examples": [
+              "requirements"
+            ]
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Filename",
+            "examples": [
+              "connector-verification.md"
+            ]
+          },
+          "contentBase64": {
+            "type": "string",
+            "title": "Contentbase64",
+            "description": "Base64-encoded file content (max 25 MB decoded)"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype",
+            "default": "application/octet-stream",
+            "examples": [
+              "text/markdown; charset=utf-8"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "project",
+          "fileName",
+          "contentBase64"
+        ],
+        "title": "DocumentUploadBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "correlationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlationid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LivenessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "examples": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service",
+            "examples": [
+              "jira-connector"
+            ]
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector",
+            "examples": [
+              "jira"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "examples": [
+              "1.0.0"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "live, mock, or disabled",
+            "examples": [
+              "live"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "version",
+          "mode",
+          "timestamp"
+        ],
+        "title": "LivenessResponse"
+      },
+      "ProjectRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "examples": [
+              "3f9c2a7e-connector-verify"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "examples": [
+              "Connector Verification"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProjectRef",
+        "description": "The SDLC project a documentation operation belongs to."
+      },
+      "ReadinessCheckModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "JIRA_API_TOKEN"
+            ]
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ok"
+        ],
+        "title": "ReadinessCheckModel"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "ready or not_ready",
+            "examples": [
+              "ready"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessCheckModel"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "mode",
+          "checks"
+        ],
+        "title": "ReadinessResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "ConnectorApiKey": {
+        "type": "apiKey",
+        "description": "Service API key. The value is the `CONNECTOR_SERVICE_API_KEY` app setting of this connector service. Store it in Key Vault; never paste it into tickets or chat.",
+        "in": "header",
+        "name": "X-Connector-Api-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness, configuration readiness, and live connectivity probes. Use these after every setup step: `/health` proves the process is running, `/health/ready` proves required settings exist, and `/health/connectivity` proves the credential is accepted by the external system."
+    },
+    {
+      "name": "sites",
+      "description": "Site resolution and per-project site creation"
+    },
+    {
+      "name": "projects",
+      "description": "Project folder and page provisioning"
+    },
+    {
+      "name": "documents",
+      "description": "Document publishing"
+    }
+  ]
+}

@@ -1,0 +1,1942 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bitbucket Connector Service",
+    "description": "Creates and manages the Bitbucket Cloud records the Agentic SDLC factory owns: repositories,\nbranches, commits, pull requests, and Bitbucket Pipelines runs.\n\nCredential: a scoped Bitbucket API token paired with the Atlassian account email\n(`BITBUCKET_USERNAME` + `BITBUCKET_APP_PASSWORD`) or a Bearer `BITBUCKET_ACCESS_TOKEN` \u2014 never both.\nSet `BITBUCKET_WORKSPACE` and `BITBUCKET_LIVE=1`.\n\n**Setup guide:** [Bitbucket setup](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/blob/main/docs/setup/connectors/bitbucket.md)\n\n**Authentication:** send `X-Connector-Api-Key: <CONNECTOR_SERVICE_API_KEY>` on every request except `GET /health`. Optionally send `X-Caller` (recorded in the audit log) and `x-correlation-id` (echoed back).",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe (anonymous)",
+        "description": "Returns 200 when the process is running. Makes no outbound call and returns no configuration.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Configuration readiness",
+        "description": "Checks that the connector is enabled and live and that every required setting is present. Returns 200 when ready and 503 otherwise. Setting values are never returned.",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/health/connectivity": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Live, read-only connectivity probe",
+        "description": "Authenticates to the external system and performs one read-only call. Returns 200 when the credential and permissions are accepted, 409 in mock/disabled mode, and 502/503 on failure.",
+        "operationId": "connectivity_health_connectivity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled or in mock mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "External system rejected the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Credential unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectivityResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/repos": {
+      "get": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "List workspace repositories",
+        "operationId": "list_repos_api_v1_repos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response List Repos Api V1 Repos Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "Create (or reuse) a repository",
+        "operationId": "create_repo_api_v1_repos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubRepoCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/repos/{repo}": {
+      "get": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "Get a repository",
+        "operationId": "get_repo_api_v1_repos__repo__get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Repo Api V1 Repos  Repo  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "Delete a disposable repository",
+        "description": "Destructive; needs delete:repository:bitbucket. `confirm` must repeat the repository slug exactly.",
+        "operationId": "delete_repo_api_v1_repos__repo__delete",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          },
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Confirm"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Repo Api V1 Repos  Repo  Delete"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/branches": {
+      "get": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "List branches",
+        "operationId": "list_branches_api_v1_repos__repo__branches_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response List Branches Api V1 Repos  Repo  Branches Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "Create a branch",
+        "operationId": "create_branch_api_v1_repos__repo__branches_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BranchCreateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/contents": {
+      "get": {
+        "tags": [
+          "contents"
+        ],
+        "summary": "Read a file",
+        "operationId": "get_file_api_v1_repos__repo__contents_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Path"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ref"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get File Api V1 Repos  Repo  Contents Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "contents"
+        ],
+        "summary": "Commit a file",
+        "operationId": "put_file_api_v1_repos__repo__contents_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileCommitBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Put File Api V1 Repos  Repo  Contents Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/pulls": {
+      "get": {
+        "tags": [
+          "pull requests"
+        ],
+        "summary": "List pull requests",
+        "operationId": "list_pulls_api_v1_repos__repo__pulls_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(OPEN|MERGED|DECLINED|SUPERSEDED)$",
+              "default": "OPEN",
+              "title": "State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response List Pulls Api V1 Repos  Repo  Pulls Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pull requests"
+        ],
+        "summary": "Open a pull request",
+        "operationId": "create_pull_api_v1_repos__repo__pulls_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PullRequestCreateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/pipelines/access": {
+      "get": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Read-only Pipelines permission preflight",
+        "description": "Reads the Pipelines configuration and run list. Does not enable Pipelines, run, or write variables.",
+        "operationId": "pipeline_access_api_v1_repos__repo__pipelines_access_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Pipeline Access Api V1 Repos  Repo  Pipelines Access Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/pipelines/runs": {
+      "post": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Run the pipeline for a branch",
+        "operationId": "run_pipeline_api_v1_repos__repo__pipelines_runs_post",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdoPipelineRunBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Run Pipeline Api V1 Repos  Repo  Pipelines Runs Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/pipelines/latest": {
+      "get": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Latest pipeline status",
+        "operationId": "latest_pipeline_api_v1_repos__repo__pipelines_latest_get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          },
+          {
+            "name": "branch",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Branch"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Latest Pipeline Api V1 Repos  Repo  Pipelines Latest Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/repos/{repo}/pipelines/{run_id}": {
+      "get": {
+        "tags": [
+          "pipelines"
+        ],
+        "summary": "Get a pipeline run",
+        "operationId": "get_pipeline_api_v1_repos__repo__pipelines__run_id__get",
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 62,
+              "pattern": "^[a-z0-9._-]+$",
+              "examples": [
+                "agentic-sdlc-verify"
+              ],
+              "title": "Repo"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Pipeline Api V1 Repos  Repo  Pipelines  Run Id  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdoPipelineRunBody": {
+        "properties": {
+          "branch": {
+            "type": "string",
+            "title": "Branch",
+            "default": "main"
+          }
+        },
+        "type": "object",
+        "title": "AdoPipelineRunBody"
+      },
+      "BranchCreateBody": {
+        "properties": {
+          "branch": {
+            "type": "string",
+            "title": "Branch"
+          },
+          "fromBranch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frombranch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "branch"
+        ],
+        "title": "BranchCreateBody"
+      },
+      "ConnectivityResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "connected or failed",
+            "examples": [
+              "connected"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "durationMs": {
+            "type": "integer",
+            "title": "Durationms"
+          },
+          "identity": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Identity",
+            "description": "Non-secret identity summary"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "mode",
+          "durationMs"
+        ],
+        "title": "ConnectivityResponse"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "correlationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlationid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "FileCommitBody": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Update from Agentic SDLC"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "content"
+        ],
+        "title": "FileCommitBody"
+      },
+      "GitHubRepoCreateBody": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private",
+            "default": true
+          },
+          "autoInit": {
+            "type": "boolean",
+            "title": "Autoinit",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "GitHubRepoCreateBody"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LivenessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "examples": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service",
+            "examples": [
+              "jira-connector"
+            ]
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector",
+            "examples": [
+              "jira"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "examples": [
+              "1.0.0"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "live, mock, or disabled",
+            "examples": [
+              "live"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "version",
+          "mode",
+          "timestamp"
+        ],
+        "title": "LivenessResponse"
+      },
+      "PullRequestCreateBody": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "head": {
+            "type": "string",
+            "title": "Head"
+          },
+          "base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "head"
+        ],
+        "title": "PullRequestCreateBody"
+      },
+      "ReadinessCheckModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "JIRA_API_TOKEN"
+            ]
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ok"
+        ],
+        "title": "ReadinessCheckModel"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "ready or not_ready",
+            "examples": [
+              "ready"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "connector": {
+            "type": "string",
+            "title": "Connector"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessCheckModel"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "connector",
+          "mode",
+          "checks"
+        ],
+        "title": "ReadinessResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "ConnectorApiKey": {
+        "type": "apiKey",
+        "description": "Service API key. The value is the `CONNECTOR_SERVICE_API_KEY` app setting of this connector service. Store it in Key Vault; never paste it into tickets or chat.",
+        "in": "header",
+        "name": "X-Connector-Api-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness, configuration readiness, and live connectivity probes. Use these after every setup step: `/health` proves the process is running, `/health/ready` proves required settings exist, and `/health/connectivity` proves the credential is accepted by the external system."
+    },
+    {
+      "name": "repositories",
+      "description": "Repository and branch lifecycle"
+    },
+    {
+      "name": "contents",
+      "description": "File reads and commits"
+    },
+    {
+      "name": "pull requests",
+      "description": "Pull requests"
+    },
+    {
+      "name": "pipelines",
+      "description": "Bitbucket Pipelines"
+    }
+  ]
+}

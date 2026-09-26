@@ -2,6 +2,8 @@
 
 The Azure DevOps (ADO) connector creates and maintains everything the factory owns in Azure DevOps: projects, Azure Boards work items and backlog hierarchies, iterations, Azure Repos repositories and branches, pull requests, Test Plans, pipelines, wiki pages and dashboards. It runs as its own micro-service, `<api-app>-ado`.
 
+> **Swagger / API docs:** `https://<api-app>-ado.azurewebsites.net/docs` (your environment) · [reference environment](https://agentic-sdlc-api-my-ado.azurewebsites.net/docs) · [committed OpenAPI contract](openapi/ado.openapi.json). The Swagger page is anonymous; every `/api/v1` call and `/health/ready`, `/health/connectivity` need the `X-Connector-Api-Key` header — select **Authorize** in Swagger UI and paste the key (see [Service API Key Handling](README.md#service-api-key-handling)).
+
 ## Table of Contents
 
 - [What You Will Configure](#what-you-will-configure)
@@ -150,7 +152,11 @@ Deploy with **GitHub > Actions > Deploy connector service - Azure DevOps**, then
 
 | Item | Location |
 | --- | --- |
-| Live Swagger UI | `https://<api-app>-ado.azurewebsites.net/docs` |
+| Swagger UI (your environment) | `https://<api-app>-ado.azurewebsites.net/docs` |
+| ReDoc (your environment) | `https://<api-app>-ado.azurewebsites.net/redoc` |
+| OpenAPI JSON (your environment) | `https://<api-app>-ado.azurewebsites.net/openapi.json` |
+| Swagger UI (reference environment) | [https://agentic-sdlc-api-my-ado.azurewebsites.net/docs](https://agentic-sdlc-api-my-ado.azurewebsites.net/docs) |
+| OpenAPI JSON (reference environment) | [https://agentic-sdlc-api-my-ado.azurewebsites.net/openapi.json](https://agentic-sdlc-api-my-ado.azurewebsites.net/openapi.json) |
 | Committed contract | [openapi/ado.openapi.json](openapi/ado.openapi.json) ([interactive viewer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/ado.openapi.json)) |
 
 | Method | Path | Purpose |

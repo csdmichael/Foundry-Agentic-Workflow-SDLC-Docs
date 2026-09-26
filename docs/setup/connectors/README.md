@@ -5,6 +5,7 @@ The Agentic SDLC Factory stores every project asset in the systems of record (SO
 ## Table of Contents
 
 - [Connector Guides](#connector-guides)
+- [Swagger URLs](#swagger-urls)
 - [How the Connector Services Are Deployed](#how-the-connector-services-are-deployed)
 - [Placeholders Used in Every Guide](#placeholders-used-in-every-guide)
 - [Step 1. Create the Connector Web Apps](#step-1-create-the-connector-web-apps)
@@ -29,6 +30,20 @@ Complete only the guides for the providers you selected. Each guide ends with a 
 | 7 | Azure Resource Manager | App Service plans and web apps for generated applications; published code | Managed identity with App Service roles | [azure-resource-manager.md](azure-resource-manager.md) | [azure-arm.openapi.json](openapi/azure-arm.openapi.json) |
 
 Open any OpenAPI file in an interactive viewer with `https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/<file>`. The deployed service serves the same contract live at `https://<api-app>-<suffix>/docs`.
+
+## Swagger URLs
+
+Every connector service publishes interactive Swagger UI at `/docs`, ReDoc at `/redoc`, and the OpenAPI document at `/openapi.json`. The pages are anonymous; operations require the `X-Connector-Api-Key` header (use **Authorize** in Swagger UI).
+
+| Connector | Swagger UI (your environment) | Reference environment | Committed contract |
+| --- | --- | --- | --- |
+| [SharePoint](sharepoint.md) | `https://<api-app>-sharepoint.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/openapi.json) | [sharepoint.openapi.json](openapi/sharepoint.openapi.json) |
+| [Confluence](confluence.md) | `https://<api-app>-confluence.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-confluence.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-confluence.azurewebsites.net/openapi.json) | [confluence.openapi.json](openapi/confluence.openapi.json) |
+| [Jira](jira.md) | `https://<api-app>-jira.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-jira.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-jira.azurewebsites.net/openapi.json) | [jira.openapi.json](openapi/jira.openapi.json) |
+| [Azure DevOps](azure-devops.md) | `https://<api-app>-ado.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-ado.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-ado.azurewebsites.net/openapi.json) | [ado.openapi.json](openapi/ado.openapi.json) |
+| [GitHub](github.md) | `https://<api-app>-github.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-github.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-github.azurewebsites.net/openapi.json) | [github.openapi.json](openapi/github.openapi.json) |
+| [Bitbucket](bitbucket.md) | `https://<api-app>-bitbucket.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/openapi.json) | [bitbucket.openapi.json](openapi/bitbucket.openapi.json) |
+| [Azure Resource Manager](azure-resource-manager.md) | `https://<api-app>-arm.azurewebsites.net/docs` | [Swagger](https://agentic-sdlc-api-my-arm.azurewebsites.net/docs) · [OpenAPI](https://agentic-sdlc-api-my-arm.azurewebsites.net/openapi.json) | [azure-arm.openapi.json](openapi/azure-arm.openapi.json) |
 
 ## How the Connector Services Are Deployed
 

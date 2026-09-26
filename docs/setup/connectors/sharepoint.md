@@ -2,6 +2,8 @@
 
 The SharePoint connector stores each SDLC project's documentation in SharePoint Online through Microsoft Graph. In the recommended **`perProjectSite`** mode the factory creates a **dedicated SharePoint communication site for every SDLC project** (`https://<sharepoint-tenant>.sharepoint.com/sites/sdlc-<project-name>-<id>`), then creates a document folder named after the project with one sub-folder per category, a published overview page, and uploads approved documents. In `sharedSite` mode projects get folders and a page inside one configured site instead. It runs as its own micro-service, `<api-app>-sharepoint`.
 
+> **Swagger / API docs:** `https://<api-app>-sharepoint.azurewebsites.net/docs` (your environment) · [reference environment](https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/docs) · [committed OpenAPI contract](openapi/sharepoint.openapi.json). The Swagger page is anonymous; every `/api/v1` call and `/health/ready`, `/health/connectivity` need the `X-Connector-Api-Key` header — select **Authorize** in Swagger UI and paste the key (see [Service API Key Handling](README.md#service-api-key-handling)).
+
 ## Table of Contents
 
 - [What You Will Configure](#what-you-will-configure)
@@ -211,7 +213,11 @@ Site creation takes 20–60 seconds. The disposable site is retained for review;
 
 | Item | Location |
 | --- | --- |
-| Live Swagger UI | `https://<api-app>-sharepoint.azurewebsites.net/docs` |
+| Swagger UI (your environment) | `https://<api-app>-sharepoint.azurewebsites.net/docs` |
+| ReDoc (your environment) | `https://<api-app>-sharepoint.azurewebsites.net/redoc` |
+| OpenAPI JSON (your environment) | `https://<api-app>-sharepoint.azurewebsites.net/openapi.json` |
+| Swagger UI (reference environment) | [https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/docs](https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/docs) |
+| OpenAPI JSON (reference environment) | [https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/openapi.json](https://agentic-sdlc-api-my-sharepoint.azurewebsites.net/openapi.json) |
 | Committed contract | [openapi/sharepoint.openapi.json](openapi/sharepoint.openapi.json) ([interactive viewer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/sharepoint.openapi.json)) |
 
 | Method | Path | Purpose |

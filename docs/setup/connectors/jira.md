@@ -2,6 +2,8 @@
 
 The Jira connector creates and maintains the Jira records the factory owns for every SDLC project: the Jira project, the Epic → Story → Task backlog, sprints, and test plans and test cases (represented as Jira issues). It runs as its own micro-service, `<api-app>-jira`.
 
+> **Swagger / API docs:** `https://<api-app>-jira.azurewebsites.net/docs` (your environment) · [reference environment](https://agentic-sdlc-api-my-jira.azurewebsites.net/docs) · [committed OpenAPI contract](openapi/jira.openapi.json). The Swagger page is anonymous; every `/api/v1` call and `/health/ready`, `/health/connectivity` need the `X-Connector-Api-Key` header — select **Authorize** in Swagger UI and paste the key (see [Service API Key Handling](README.md#service-api-key-handling)).
+
 ## Table of Contents
 
 - [What You Will Configure](#what-you-will-configure)
@@ -177,8 +179,11 @@ Finally, confirm the factory API sees Jira as connected: sign in to the factory,
 
 | Item | Location |
 | --- | --- |
-| Live Swagger UI | `https://<api-app>-jira.azurewebsites.net/docs` |
-| Live OpenAPI | `https://<api-app>-jira.azurewebsites.net/openapi.json` |
+| Swagger UI (your environment) | `https://<api-app>-jira.azurewebsites.net/docs` |
+| ReDoc (your environment) | `https://<api-app>-jira.azurewebsites.net/redoc` |
+| OpenAPI JSON (your environment) | `https://<api-app>-jira.azurewebsites.net/openapi.json` |
+| Swagger UI (reference environment) | [https://agentic-sdlc-api-my-jira.azurewebsites.net/docs](https://agentic-sdlc-api-my-jira.azurewebsites.net/docs) |
+| OpenAPI JSON (reference environment) | [https://agentic-sdlc-api-my-jira.azurewebsites.net/openapi.json](https://agentic-sdlc-api-my-jira.azurewebsites.net/openapi.json) |
 | Committed contract | [openapi/jira.openapi.json](openapi/jira.openapi.json) ([interactive viewer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/jira.openapi.json)) |
 
 | Method | Path | Purpose |

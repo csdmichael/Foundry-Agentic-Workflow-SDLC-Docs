@@ -2,6 +2,8 @@
 
 The Confluence connector publishes each SDLC project's documentation to Confluence Cloud: one project page, one folder per documentation category (Requirements, Technical Requirements, UX and Design, Architecture and Design, Planning, Testing, Release and Operations, Supporting Files), and file attachments. It runs as its own micro-service, `<api-app>-confluence`.
 
+> **Swagger / API docs:** `https://<api-app>-confluence.azurewebsites.net/docs` (your environment) · [reference environment](https://agentic-sdlc-api-my-confluence.azurewebsites.net/docs) · [committed OpenAPI contract](openapi/confluence.openapi.json). The Swagger page is anonymous; every `/api/v1` call and `/health/ready`, `/health/connectivity` need the `X-Connector-Api-Key` header — select **Authorize** in Swagger UI and paste the key (see [Service API Key Handling](README.md#service-api-key-handling)).
+
 ## Table of Contents
 
 - [What You Will Configure](#what-you-will-configure)
@@ -152,7 +154,11 @@ Expected read-only readiness block:
 
 | Item | Location |
 | --- | --- |
-| Live Swagger UI | `https://<api-app>-confluence.azurewebsites.net/docs` |
+| Swagger UI (your environment) | `https://<api-app>-confluence.azurewebsites.net/docs` |
+| ReDoc (your environment) | `https://<api-app>-confluence.azurewebsites.net/redoc` |
+| OpenAPI JSON (your environment) | `https://<api-app>-confluence.azurewebsites.net/openapi.json` |
+| Swagger UI (reference environment) | [https://agentic-sdlc-api-my-confluence.azurewebsites.net/docs](https://agentic-sdlc-api-my-confluence.azurewebsites.net/docs) |
+| OpenAPI JSON (reference environment) | [https://agentic-sdlc-api-my-confluence.azurewebsites.net/openapi.json](https://agentic-sdlc-api-my-confluence.azurewebsites.net/openapi.json) |
 | Committed contract | [openapi/confluence.openapi.json](openapi/confluence.openapi.json) ([interactive viewer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/confluence.openapi.json)) |
 
 | Method | Path | Purpose |

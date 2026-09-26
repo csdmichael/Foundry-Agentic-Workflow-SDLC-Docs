@@ -2,6 +2,8 @@
 
 The Bitbucket connector creates and manages the Bitbucket Cloud records the factory owns: one private repository per SDLC project, branches, commits, pull requests, and Bitbucket Pipelines runs. It runs as its own micro-service, `<api-app>-bitbucket`.
 
+> **Swagger / API docs:** `https://<api-app>-bitbucket.azurewebsites.net/docs` (your environment) · [reference environment](https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/docs) · [committed OpenAPI contract](openapi/bitbucket.openapi.json). The Swagger page is anonymous; every `/api/v1` call and `/health/ready`, `/health/connectivity` need the `X-Connector-Api-Key` header — select **Authorize** in Swagger UI and paste the key (see [Service API Key Handling](README.md#service-api-key-handling)).
+
 ## Table of Contents
 
 - [What You Will Configure](#what-you-will-configure)
@@ -123,7 +125,11 @@ Deploy with **GitHub > Actions > Deploy connector service - Bitbucket**, then:
 
 | Item | Location |
 | --- | --- |
-| Live Swagger UI | `https://<api-app>-bitbucket.azurewebsites.net/docs` |
+| Swagger UI (your environment) | `https://<api-app>-bitbucket.azurewebsites.net/docs` |
+| ReDoc (your environment) | `https://<api-app>-bitbucket.azurewebsites.net/redoc` |
+| OpenAPI JSON (your environment) | `https://<api-app>-bitbucket.azurewebsites.net/openapi.json` |
+| Swagger UI (reference environment) | [https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/docs](https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/docs) |
+| OpenAPI JSON (reference environment) | [https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/openapi.json](https://agentic-sdlc-api-my-bitbucket.azurewebsites.net/openapi.json) |
 | Committed contract | [openapi/bitbucket.openapi.json](openapi/bitbucket.openapi.json) ([interactive viewer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/bitbucket.openapi.json)) |
 
 | Method | Path | Purpose |

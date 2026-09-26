@@ -2,6 +2,8 @@
 
 The Azure Resource Manager (ARM) connector provisions Azure App Service hosting for generated applications and **publishes their code**: App Service plans, Linux web apps, app settings, startup commands, managed identities, role assignments, and zip deployments through Kudu using Entra authentication (no publishing passwords). It runs as its own micro-service, `<api-app>-arm`. Generated repositories additionally release through their own pipeline identity (GitHub Actions, Azure Pipelines, or Bitbucket Pipelines).
 
+> **Swagger / API docs:** `https://<api-app>-arm.azurewebsites.net/docs` (your environment) · [reference environment](https://agentic-sdlc-api-my-arm.azurewebsites.net/docs) · [committed OpenAPI contract](openapi/azure-arm.openapi.json). The Swagger page is anonymous; every `/api/v1` call and `/health/ready`, `/health/connectivity` need the `X-Connector-Api-Key` header — select **Authorize** in Swagger UI and paste the key (see [Service API Key Handling](README.md#service-api-key-handling)).
+
 ## Table of Contents
 
 - [Identities Involved](#identities-involved)
@@ -125,7 +127,11 @@ Set `BITBUCKET_AZURE_CLIENT_ID` / `BITBUCKET_AZURE_TENANT_ID` and exact `azureOi
 
 | Item | Location |
 | --- | --- |
-| Live Swagger UI | `https://<api-app>-arm.azurewebsites.net/docs` |
+| Swagger UI (your environment) | `https://<api-app>-arm.azurewebsites.net/docs` |
+| ReDoc (your environment) | `https://<api-app>-arm.azurewebsites.net/redoc` |
+| OpenAPI JSON (your environment) | `https://<api-app>-arm.azurewebsites.net/openapi.json` |
+| Swagger UI (reference environment) | [https://agentic-sdlc-api-my-arm.azurewebsites.net/docs](https://agentic-sdlc-api-my-arm.azurewebsites.net/docs) |
+| OpenAPI JSON (reference environment) | [https://agentic-sdlc-api-my-arm.azurewebsites.net/openapi.json](https://agentic-sdlc-api-my-arm.azurewebsites.net/openapi.json) |
 | Committed contract | [openapi/azure-arm.openapi.json](openapi/azure-arm.openapi.json) ([interactive viewer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/csdmichael/Foundry-Agentic-Workflow-SDLC-Docs/main/docs/setup/connectors/openapi/azure-arm.openapi.json)) |
 
 | Method | Path | Purpose |

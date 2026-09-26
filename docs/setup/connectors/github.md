@@ -68,7 +68,24 @@ Open `https://github.com/settings/personal-access-tokens/new` as the bot:
 | Repository access | **All repositories** |
 | Repository permissions | **Administration: Read and write**, **Contents: Read and write**, **Pull requests: Read and write**, **Issues: Read and write**, **Actions: Read and write**, **Workflows: Read and write**, **Secrets: Read and write**, **Variables: Read and write**, **Environments: Read and write**, **Webhooks: Read and write**, Metadata: Read (automatic) |
 
-Select **Generate token**; the organization may require an owner to approve it under **Organization settings → Personal access tokens → Pending requests**.
+1. Enter the name, description, resource owner and expiration.
+
+   ![New fine-grained token: name, description, resource owner](images/github/01-github-fine-grained-name-owner.png)
+   *`https://github.com/settings/personal-access-tokens/new`*
+
+2. **Repository access → All repositories** (the factory creates a new repository for every SDLC project).
+
+   ![Repository access: All repositories](images/github/02-github-fine-grained-repository-access.png)
+
+3. **Permissions → Repositories → Add permissions** and tick Actions, Administration, Contents, Environments, Issues, Pull requests, Secrets, Variables, Webhooks and Workflows (Metadata is added automatically).
+
+   ![Select repository permissions](images/github/03-github-fine-grained-select-permissions.png)
+
+4. Change every added permission from **Read-only** to **Read and write** (Metadata stays Read-only). Compare with the screenshot: 10 permissions *Read and write* + Metadata *Read-only*.
+
+   ![Repository permissions set to Read and write](images/github/04-github-fine-grained-permissions.png)
+
+5. Select **Generate token** and copy it once. The organization may require an owner to approve it under **Organization settings → Personal access tokens → Pending requests**.
 
 ### Classic token (reference environment)
 
@@ -80,7 +97,16 @@ Open `https://github.com/settings/tokens/new` (**Settings → Developer settings
 | Expiration | Shortest practical |
 | Scopes | `repo` (all sub-scopes), `workflow`, and `delete_repo` only if governed cleanup is enabled |
 
-Then **Configure SSO → Authorize** for `<github-owner>` if SSO is enforced.
+![Classic token: note and expiration](images/github/05-github-classic-token-note-expiry.png)
+*`https://github.com/settings/tokens/new` — note and shortest practical expiration.*
+
+![Classic token scopes: repo and workflow](images/github/06-github-classic-scope-repo-workflow.png)
+*Tick `repo` (all sub-scopes are selected automatically) and `workflow`.*
+
+![Classic token scope: delete_repo](images/github/07-github-classic-scope-delete-repo.png)
+*Tick `delete_repo` only if governed cleanup of disposable repositories is enabled.*
+
+Select **Generate token**, copy it once, then **Configure SSO → Authorize** for `<github-owner>` if SSO is enforced.
 
 **Verify step 2**
 

@@ -119,6 +119,7 @@ Foundry agents can look up existing records in the project's systems of record t
 | Foundry connection | `sdlc-connector-<service>` (category **Custom keys**, key `X-Connector-Api-Key`) in the Foundry project, one per service. |
 | Agent assignment | `connectorTools.agents` in [agents.config.json](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/agents/config/agents.config.json), for example Requirements → documentation and work-item lookups, Code Review → repositories. |
 | Synchronization | The **Deploy API** workflow passes the service URLs to `sync_foundry_agents.py`, which attaches the tools and re-versions an agent only when its definition hash changes. |
+| Failed lookups | A tool call that fails (for example invalid WIQL or an unknown project) returns HTTP 200 with `{"ok": false, "status": <code>, "error": "..."}` to the agent, so the model can correct the query or continue. Foundry would otherwise fail the whole agent response. If Foundry still reports a tool failure, the factory retries once without tools and then backs off as a transient error; the workflow is never stopped by a lookup. |
 
 Create the read-only keys and Foundry connections (idempotent; keys are never displayed):
 

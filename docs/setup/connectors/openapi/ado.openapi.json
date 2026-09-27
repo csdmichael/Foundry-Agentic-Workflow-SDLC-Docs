@@ -894,6 +894,7 @@
           "work items"
         ],
         "summary": "Query work items with WIQL",
+        "description": "Runs a WIQL query in the project. Omit `wiql` to list recently changed work items. WIQL has no LIMIT clause: use `top` to cap rows (trailing `LIMIT n` and `SELECT TOP n` are accepted and converted). Example: `SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Epic'`.",
         "operationId": "list_work_items_api_v1_projects__project__workitems_get",
         "security": [
           {

@@ -8,6 +8,7 @@ The Agentic SDLC Factory stores every project asset in the systems of record (SO
 - [Swagger URLs](#swagger-urls)
 - [How the Connector Services Are Deployed](#how-the-connector-services-are-deployed)
 - [Factory Routing](#factory-routing)
+- [Agent Tools (Read-Only)](#agent-tools-read-only)
 - [Placeholders Used in Every Guide](#placeholders-used-in-every-guide)
 - [Step 1. Create the Connector Web Apps](#step-1-create-the-connector-web-apps)
 - [Step 2. Deploy the Connector Code](#step-2-deploy-the-connector-code)
@@ -106,6 +107,40 @@ az webapp restart -g $ResourceGroup -n $ApiApp --subscription $Subscription
 ```
 
 **Verify**: the connector service log stream (`az webapp log tail -g $ResourceGroup -n "$ApiApp-jira"`) shows `connector-service-audit` records with `"action": "jira.rpc.<operation>"` and `"caller": "factory-api"` when the factory creates or updates Jira records. Keep each connector's `*_LIVE=1` flag and non-secret URL settings on the factory API; connector secrets are only needed on the connector services once routing is verified.
+
+## Agent Tools (Read-Only)
+
+Foundry agents can look up existing records in the project's systems of record through **read-only OpenAPI tools** that call the connector services. Agents cannot change anything through these tools: every change is written into the agent's proposal and published by the factory only after human approval.
+
+| Piece | Detail |
+| --- | --- |
+| Tool contract | GET operations only, generated from each service's contract: [openapi/tools](openapi/tools) (for example `github_get_file`, `ado_list_work_items`, `jira_get_project`, `sharepoint_resolve_site`). |
+| Credential | Each service has a separate `CONNECTOR_SERVICE_READONLY_API_KEY`. The service accepts it **only for GET/HEAD**; POST, PUT, PATCH, DELETE and `/api/v1/rpc` return `403`. |
+| Foundry connection | `sdlc-connector-<service>` (category **Custom keys**, key `X-Connector-Api-Key`) in the Foundry project, one per service. |
+| Agent assignment | `connectorTools.agents` in [agents.config.json](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/agents/config/agents.config.json), for example Requirements → documentation and work-item lookups, Code Review → repositories. |
+| Synchronization | The **Deploy API** workflow passes the service URLs to `sync_foundry_agents.py`, which attaches the tools and re-versions an agent only when its definition hash changes. |
+
+Create the read-only keys and Foundry connections (idempotent; keys are never displayed):
+
+```powershell
+./scripts/connector-services/New-ConnectorServiceApps.ps1 -ResourceGroup $ResourceGroup -ApiAppName $ApiApp -Subscription $Subscription -WireFoundry
+gh workflow run deploy-api.yml --repo <github-owner>/<application-repository> --ref main
+```
+
+**Verify**
+
+1. **Foundry portal > your project > Management center > Connected resources** lists `sdlc-connector-sharepoint` … `sdlc-connector-azure-arm`.
+2. **Foundry portal > Agents > 010-requirements-agent > Tools** lists the `*_readonly` OpenAPI tools.
+3. The read-only key reads but cannot write:
+
+   ```powershell
+   $key = az webapp config appsettings list -g $ResourceGroup -n "$ApiApp-github" --query "[?name=='CONNECTOR_SERVICE_READONLY_API_KEY'].value | [0]" -o tsv
+   (Invoke-WebRequest "https://$ApiApp-github.azurewebsites.net/api/v1/repos" -Headers @{ 'X-Connector-Api-Key' = $key }).StatusCode        # 200
+   (Invoke-WebRequest "https://$ApiApp-github.azurewebsites.net/api/v1/repos" -Method POST -Body '{"name":"x"}' -ContentType 'application/json' `
+       -Headers @{ 'X-Connector-Api-Key' = $key } -SkipHttpErrorCheck).StatusCode                                                            # 403
+   ```
+
+Rotate with `-RotateApiKey -WireFoundry` (updates the service and the Foundry connection together).
 
 ## Placeholders Used in Every Guide
 

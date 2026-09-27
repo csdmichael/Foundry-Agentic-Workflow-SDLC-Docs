@@ -1925,9 +1925,33 @@ gates still run. Fresh merges rely on the workflow's `push` trigger; explicit
 dispatch is reserved for already-merged retries, and generated workflows cancel
 duplicate runs for the same ref.
 
+**Verify the Graph permission** (a missing role otherwise surfaces only as
+`AADSTS700213` in the generated deploy run):
+
+```powershell
+$mi = az webapp identity show -g <resource-group> -n <api-app> --query principalId -o tsv
+az rest --method GET --url "https://graph.microsoft.com/v1.0/servicePrincipals/$mi/appRoleAssignments" `
+  --query "value[?appRoleId=='18a4783c-866b-4cc7-a460-3d5e5662c884'].resourceDisplayName" -o tsv
+# Expected output: Microsoft Graph   (Application.ReadWrite.OwnedBy)
+az ad app owner list --id <GITHUB_OIDC_CLIENT_ID> --query "[].displayName" -o tsv
+# Expected: the API app's managed identity is listed as an owner
+```
+
+A Privileged Role Administrator or Global Administrator grants the role once
+(`POST /servicePrincipals/{mi}/appRoleAssignments` with `appRoleId`
+`18a4783c-866b-4cc7-a460-3d5e5662c884`); restart the API afterwards so the managed
+identity token picks it up.
+
 **Restart safety:** an automated approval interrupted by an API restart or
 deployment (gate left `Running`) is re-queued and resumed automatically after
 five minutes; no manual retry is required.
+
+**Retrying a failed deployment:** release runs check out a pinned
+`agentic-sdlc-release/<merge-sha>` tag, and the release-links README commit is
+pushed to the tip of the default branch. When the tracked deployment run fails,
+fix the cause (for example the federated credential) and retry the release: the
+factory dispatches a fresh run for the approved merge commit instead of re-reading
+the failed one.
 
 ### Generated-project native pipelines
 

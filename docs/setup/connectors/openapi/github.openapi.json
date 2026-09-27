@@ -1420,6 +1420,103 @@
           }
         }
       }
+    },
+    "/api/v1/rpc": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Execute a connector operation for the factory API",
+        "description": "Internal contract used by the factory API: executes one allow-listed public method of the GitHub client with JSON-encoded arguments and returns its JSON-encoded result. Callback arguments are recorded and returned for replay by the caller.",
+        "operationId": "rpc_api_v1_rpc_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RpcRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RpcResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid X-Connector-Api-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connector disabled, in mock mode, or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The external system rejected or failed the call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service credential or API key not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ConnectorApiKey": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1785,6 +1882,59 @@
           "checks"
         ],
         "title": "ReadinessResponse"
+      },
+      "RpcRequest": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Method",
+            "examples": [
+              "create_project"
+            ]
+          },
+          "args": {
+            "items": {},
+            "type": "array",
+            "title": "Args"
+          },
+          "kwargs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Kwargs"
+          },
+          "init": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Init",
+            "description": "Constructor overrides, for example a workspace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "method"
+        ],
+        "title": "RpcRequest"
+      },
+      "RpcResponse": {
+        "properties": {
+          "result": {
+            "title": "Result"
+          },
+          "callbacks": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Callbacks"
+          }
+        },
+        "type": "object",
+        "title": "RpcResponse"
       },
       "ValidationError": {
         "properties": {

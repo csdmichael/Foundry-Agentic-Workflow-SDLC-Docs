@@ -7,6 +7,7 @@ The Agentic SDLC Factory stores every project asset in the systems of record (SO
 - [Connector Guides](#connector-guides)
 - [Swagger URLs](#swagger-urls)
 - [How the Connector Services Are Deployed](#how-the-connector-services-are-deployed)
+- [Factory Routing](#factory-routing)
 - [Placeholders Used in Every Guide](#placeholders-used-in-every-guide)
 - [Step 1. Create the Connector Web Apps](#step-1-create-the-connector-web-apps)
 - [Step 2. Deploy the Connector Code](#step-2-deploy-the-connector-code)
@@ -59,6 +60,7 @@ flowchart LR
         BB["<api-app>-bitbucket"]
         ARM["<api-app>-arm"]
     end
+    API -- "RPC /api/v1/rpc" --> SP & CF & JI & AD & GH & BB & ARM
     SP --> Graph[Microsoft Graph / SharePoint]
     CF --> Confluence[Confluence Cloud]
     JI --> Jira[Jira Cloud]
@@ -76,8 +78,34 @@ flowchart LR
 | Isolation | Each web app holds **only its own connector's credential** and its own system-assigned managed identity. A compromised Jira token cannot reach GitHub. |
 | Health | App Service health check path `/health`; Always On; HTTPS only; TLS 1.2; FTPS disabled. |
 | Authentication | `X-Connector-Api-Key` header on every call except `GET /health`. |
+| Factory routing | With `CONNECTOR_SERVICE_URL_<KEY>` and `CONNECTOR_SERVICE_KEY_<KEY>` set on the factory API, **every live system-of-record call the factory makes executes in the matching connector service** (see [Factory Routing](#factory-routing)). The factory selects the service from the project's settings, for example SharePoint or Confluence for documentation. |
 | CI/CD | One GitHub Actions workflow per connector: `deploy-connector-<name>.yml`, plus `provision-connector-services.yml` to create the web apps. |
 | Capacity | Seven extra always-on Python workers share the plan's memory. Confirm the plan size (B3 baseline) has headroom: **App Service plan > Monitoring > Memory percentage** should stay below 80 % after all services are running. |
+
+## Factory Routing
+
+The factory API is connector-agnostic: workflow code asks for "documentation", "work items", "source control", or "hosting" for the project's selected provider, and the call executes inside that provider's connector service.
+
+| Keys | `<KEY>` values |
+| --- | --- |
+| `CONNECTOR_SERVICE_URL_<KEY>` | `SHAREPOINT`, `CONFLUENCE`, `JIRA`, `ADO`, `GITHUB`, `BITBUCKET`, `AZURE_ARM` → `https://<api-app>-<suffix>.azurewebsites.net` |
+| `CONNECTOR_SERVICE_KEY_<KEY>` | That service's `CONNECTOR_SERVICE_API_KEY` (Key Vault reference recommended) |
+| `CONNECTOR_SERVICE_TIMEOUT_SECONDS` | Optional, default `600` |
+
+How it works:
+
+1. Each connector client method the factory calls (for example `ensure_project_structure` for a new project's documentation) is sent to `POST https://<api-app>-<suffix>.azurewebsites.net/api/v1/rpc` with the service API key. Only allow-listed public operations are accepted.
+2. The service runs the operation with **its own** credential or managed identity and returns the result; errors keep their type, HTTP status, and upstream status, so retries and circuit breakers behave as before.
+3. Calls stay in the factory when a connector is in mock mode, when no service URL is configured, or for pure URL helpers. Two Azure operations also stay in the factory because they use the factory identity: the Foundry model catalog and Entra federated-credential management.
+
+Wire the factory after the services are deployed (Step 2):
+
+```powershell
+./scripts/connector-services/New-ConnectorServiceApps.ps1 -ResourceGroup $ResourceGroup -ApiAppName $ApiApp -Subscription $Subscription -WireFactory
+az webapp restart -g $ResourceGroup -n $ApiApp --subscription $Subscription
+```
+
+**Verify**: the connector service log stream (`az webapp log tail -g $ResourceGroup -n "$ApiApp-jira"`) shows `connector-service-audit` records with `"action": "jira.rpc.<operation>"` and `"caller": "factory-api"` when the factory creates or updates Jira records. Keep each connector's `*_LIVE=1` flag and non-secret URL settings on the factory API; connector secrets are only needed on the connector services once routing is verified.
 
 ## Placeholders Used in Every Guide
 
@@ -178,6 +206,7 @@ Every connector service exposes the same platform endpoints:
 | GET | `/health/connectivity` | API key | Live read-only probe: identity summary and latency. 200 connected; 409 mock/disabled; 502/503 rejected. |
 | GET | `/docs`, `/redoc`, `/openapi.json` | Anonymous | Swagger UI, ReDoc, OpenAPI 3.1 document. Disable with `CONNECTOR_SERVICE_DOCS_ENABLED=0` if policy requires. |
 | * | `/api/v1/...` | API key | Connector operations. See each guide and its OpenAPI file. |
+| POST | `/api/v1/rpc` | API key | Internal contract used by the factory API to execute allow-listed client operations ([Factory Routing](#factory-routing)). |
 
 Errors use the factory envelope `{"error": "...", "correlationId": "..."}`. Send `x-correlation-id` to trace one call across logs and `X-Caller` to name the caller in the audit record. Every write operation writes one JSON audit line (`connector_services.audit` logger) to the App Service log stream with action, target, caller, and correlation ID; secrets and document contents are never logged.
 

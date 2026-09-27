@@ -225,6 +225,7 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **Live Foundry model selection and pricing:** Global Settings discovers every successful deployment from the configured Foundry account. Agent-compatible models are selectable; embedding, image, and other incompatible deployments remain visible with a disabled state and explanation. Every model dropdown includes input/output price per 1M tokens. The Model Suggestions & Pricing page lists per-agent recommendations, quality scores, cached-input rates, source, and effective pricing.
 - **Ten evidence-aware approval gates:** Cost and Time Estimate, Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Human and Minimal modes require approval of the generated preflight estimate before any agent invocation; Autonomous validates its attached estimate artifact and records an automated decision.
 - **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When they are missing, the Requirements Agent authors `## Technical Requirements (Derived)` and `## UX Mockups (Derived)` sections, the Architecture Advisor always adds a `## Technology Stack` section, and UI generation follows the derived mockups (rules in `documentAuthoring` of `agents.config.json`). When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
+- **Generated Office documents:** every approved agent artifact is also rendered as Word (`.docx`), PowerPoint (`.pptx`), and Excel (`.xlsx`) documents — requirements specification, technical requirements, UX mockups, delivery plan and backlog, architecture and technology stack, code review, test plan and results, security review, release notes, operations runbook, insights, and cost estimate. They are published into the matching category folders of the project's document store (SharePoint site or Confluence space) or into the repository `docs/` folder, and appear under **Generated assets** labelled *(Word)*, *(PowerPoint)*, or *(Excel)*. The document set is configured in `documentAuthoring.officeDocuments` of `agents.config.json`; a rendering or publishing failure is recorded as a non-blocking `office-document` entry. See [Generated Office documents](#generated-office-documents).
 - **Use-case reuse guard:** single-project and project-set dropdowns disable a catalog use case while a non-deleted project already implements it. The project persists the catalog ID so renaming cannot bypass the guard; legacy projects are matched by exact catalog name. Deleting the project makes the use case selectable again, and the API rejects duplicate active IDs to protect concurrent or direct requests.
 - **Parallel project sets:** one wizard creates `2–20` projects, defaults each to Fully autonomous execution, applies one shared agent/model policy, and allows a project to replace that policy without changing its siblings. Manual intake and validated folder-per-project ZIP import both create independent workflow runs, which advance concurrently with isolated checkpoints, approvals, audit records, and systems of record.
 - **Rich Azure DevOps planning automation:** approved Planning output creates an idempotent Epic-to-Task hierarchy plus dated sprints, shared queries, dashboards, delivery plans, estimates, tags, priorities, business value, and acceptance criteria. Generated work items are displayed as a parent/child tree, collapsed by default.
@@ -984,6 +985,41 @@ statement of business intent before delivery planning begins.
   non-functional, security, compliance, assumptions) and `## UX Mockups (Derived)`
   (screen inventory, navigation flow, responsive text wireframes). The output
   remains editable proposal evidence for Backlog Generation Approval.
+
+#### Generated Office documents
+
+After each approval, the factory renders the agent's Markdown artifact into Office
+documents and publishes them with the other project documentation. Tables become
+Excel worksheets and Word tables; each `##` section becomes a PowerPoint slide.
+The UX Mockups and Technical Requirements documents are generated from the
+Requirements Agent's `## UX Mockups (Derived)` and `## Technical Requirements (Derived)`
+sections, which it writes whenever the project did not upload those documents;
+uploaded originals are published unchanged with the intake documents instead.
+
+| Agent | Document | Category folder | Formats |
+| --- | --- | --- | --- |
+| Requirements | Requirements Specification | Requirements | docx, pptx, xlsx |
+| Requirements | Technical Requirements | Technical Requirements | md, docx, xlsx |
+| Requirements | UX Mockups | UX and Design | md, docx, pptx |
+| Planning | Delivery Plan and Backlog | Planning | docx, pptx, xlsx |
+| Architecture Advisor | Architecture and Design | Architecture and Design | docx, pptx, xlsx |
+| Architecture Advisor | Technology Stack | Architecture and Design | xlsx |
+| Code Review | Code Review Report | Testing | docx |
+| Test Planning | Test Plan | Testing | docx, xlsx |
+| Testing | Test Execution Report | Testing | docx, xlsx |
+| Security & Compliance | Security and Compliance Review | Release and Operations | docx, xlsx |
+| DevOps Release | Release Notes | Release and Operations | docx, pptx |
+| Ops Monitoring | Operations Runbook | Release and Operations | docx, xlsx |
+| Insights | Delivery Insights | Supporting Files | pptx, xlsx |
+| Cost Estimator | Cost Estimate | Supporting Files | xlsx, docx |
+
+**Verify:** open the project's SharePoint site (or Confluence space, or repository
+`docs/` folder) after the Requirements approval and confirm that `UX and Design` contains
+`UX-Mockups.md`, `.docx`, and `.pptx` (for a project without uploaded mockups). In the factory, **Generated assets**
+lists each file under the SharePoint/Confluence/GitHub group with its format label.
+If a file is missing, the agent run's tool calls contain an `office-document` entry
+with `status` `skipped` or `failed` and the error. Set
+`documentAuthoring.officeDocuments.enabled` to `false` to turn the feature off.
 
 ### 2. Planning Agent (Plan)
 
@@ -1876,15 +1912,22 @@ repo:<owner>@<ownerId>/<repo>@<repoId>:environment:production
 A legacy `repo:<owner>/<repo>:environment:production` credential alone fails with
 `AADSTS700213`.
 
-The API managed identity normally creates or verifies this credential and needs
-Microsoft Graph application role `Application.ReadWrite.OwnedBy` on an OIDC app
-registration it owns. For an operator-led recovery, an Entra owner may create and
-verify the exact credential first, temporarily set `GITHUB_FIC_PREPROVISIONED=1`,
-run the release, and remove the setting immediately afterward. This flag skips
-only Graph mutation; GitHub variables/secrets, PR merge checks, and all approval
+The API managed identity creates or verifies this credential for every generated
+repository on each release (the call is idempotent) and needs Microsoft Graph
+application role `Application.ReadWrite.OwnedBy` on an OIDC app registration it
+owns. `GITHUB_FIC_PREPROVISIONED=1` is only a fallback: when Graph rejects the
+mutation, the release continues on the assumption that an Entra owner created the
+exact credential. Create and verify it before relying on the flag, and remove the
+setting once the permission is fixed; a missing credential otherwise surfaces as
+`AADSTS700213` in the generated deploy run. GitHub variables/secrets, PR merge
+checks, and all approval
 gates still run. Fresh merges rely on the workflow's `push` trigger; explicit
 dispatch is reserved for already-merged retries, and generated workflows cancel
 duplicate runs for the same ref.
+
+**Restart safety:** an automated approval interrupted by an API restart or
+deployment (gate left `Running`) is re-queued and resumed automatically after
+five minutes; no manual retry is required.
 
 ### Generated-project native pipelines
 

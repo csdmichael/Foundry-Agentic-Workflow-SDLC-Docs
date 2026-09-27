@@ -301,7 +301,7 @@ The collapsible Overview section resolves four effective entries: Documentation,
 
 ### Generated assets
 
-The Generated assets tab groups links by system and category. Collapsible Azure DevOps and GitHub groups expose the work-item hierarchy, test and release evidence, repository and pull-request links, documentation, and other published outputs.
+The Generated assets tab groups links by system and category. Collapsible Azure DevOps, GitHub, SharePoint, Confluence, and Bitbucket groups expose the work-item hierarchy, test and release evidence, repository and pull-request links, documentation, and other published outputs. Generated Word, PowerPoint, and Excel documents are listed with a *(Word)*, *(PowerPoint)*, or *(Excel)* suffix so the formats of one document can be told apart.
 
 <img src="images/38-generated-assets.png" alt="Generated assets">
 

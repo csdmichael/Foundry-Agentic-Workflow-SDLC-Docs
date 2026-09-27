@@ -53,7 +53,7 @@ policies** controlling when agents advance to the next stage.
 22. [Specialized agents](#specialized-agents)
 23. [Systems of Record configuration](#systems-of-record-configuration)
 24. [Jira Integration](#jira-integration)
-25. [System of record provisioning & REST wrappers](#system-of-record-provisioning--rest-wrappers)
+25. [System of record provisioning & connector services](#system-of-record-provisioning--connector-services)
 26. [Configuration guide](#configuration-guide)
 27. [Security & guardrails](#security--guardrails)
 28. [Testing](#testing)
@@ -125,6 +125,8 @@ Bitbucket Cloud for source; the matching GitHub Actions, Azure Pipelines, or
 Bitbucket Pipelines runner for CI/CD; GitHub Copilot as an optional coding
 provider; Microsoft Azure for hosting and monitoring; and Azure Communication
 Services Email for owner lifecycle notifications.
+
+Each system of record is served by its own **connector micro-service** (`<api-app>-sharepoint`, `-confluence`, `-jira`, `-ado`, `-github`, `-bitbucket`, `-arm`). The factory API is connector-agnostic: it selects the provider from the project's settings and every live connector call executes in the matching service, which alone holds that connector's credential. Agents get **read-only** OpenAPI tools on the same services; writes happen only after approval. See [Connector services, factory routing, and agent tools](#connector-services-factory-routing-and-agent-tools).
 
 **5 · Global settings ▸ Project settings (right rail).** The five Systems of
 Record are configured once globally and **pre-populated, overridable per
@@ -222,7 +224,7 @@ Copy-ready summary for Microsoft Teams, email, or an executive project update:
 - **Durable FinOps and ROI evidence:** Foundry input, cached-input, output, and total tokens are attributed to projects and models. Before creation and throughout delivery, the platform compares Autonomous, Minimal review, Human review, and a totally manual AI-orchestration baseline using explicit labor assumptions. Final statistics preserve model spend, all-in project cost, human hours and dollars saved, ROI, model mix, elapsed time, and per-model breakdown for future Cost Estimator forecasts.
 - **Live Foundry model selection and pricing:** Global Settings discovers every successful deployment from the configured Foundry account. Agent-compatible models are selectable; embedding, image, and other incompatible deployments remain visible with a disabled state and explanation. Every model dropdown includes input/output price per 1M tokens. The Model Suggestions & Pricing page lists per-agent recommendations, quality scores, cached-input rates, source, and effective pricing.
 - **Ten evidence-aware approval gates:** Cost and Time Estimate, Plan and Scope, Backlog Generation, Architecture and Design, Code Generation, Pull Request Review, Test Acceptance, Security Review, Release and Deployment, and Operate and Improve. Human and Minimal modes require approval of the generated preflight estimate before any agent invocation; Autonomous validates its attached estimate artifact and records an automated decision.
-- **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
+- **Flexible project intake:** the requirements document is the only required upload; technical requirements and UX mockups are optional supporting documents. When they are missing, the Requirements Agent authors `## Technical Requirements (Derived)` and `## UX Mockups (Derived)` sections, the Architecture Advisor always adds a `## Technology Stack` section, and UI generation follows the derived mockups (rules in `documentAuthoring` of `agents.config.json`). When a description is blank, single-project intake, the manual project-set wizard, and ZIP import extract two or three concise sentences from the functional requirements before provisioning. That description is stored on the project and written to the Azure DevOps project landing page; explicit descriptions are preserved.
 - **Use-case reuse guard:** single-project and project-set dropdowns disable a catalog use case while a non-deleted project already implements it. The project persists the catalog ID so renaming cannot bypass the guard; legacy projects are matched by exact catalog name. Deleting the project makes the use case selectable again, and the API rejects duplicate active IDs to protect concurrent or direct requests.
 - **Parallel project sets:** one wizard creates `2–20` projects, defaults each to Fully autonomous execution, applies one shared agent/model policy, and allows a project to replace that policy without changing its siblings. Manual intake and validated folder-per-project ZIP import both create independent workflow runs, which advance concurrently with isolated checkpoints, approvals, audit records, and systems of record.
 - **Rich Azure DevOps planning automation:** approved Planning output creates an idempotent Epic-to-Task hierarchy plus dated sprints, shared queries, dashboards, delivery plans, estimates, tags, priorities, business value, and acceptance criteria. Generated work items are displayed as a parent/child tree, collapsed by default.
@@ -976,7 +978,11 @@ statement of business intent before delivery planning begins.
   business stakeholders plus functional, technical, and UX documents uploaded
   at intake. It is the first agent and has no previous-agent dependency.
 - **Outputs:** scope summary, actors, functional and non-functional requirements,
-  constraints, assumptions, risks, and traceable acceptance themes. The output
+  constraints, assumptions, risks, and traceable acceptance themes. When the
+  project supplied no technical requirements or UX mockups, it adds
+  `## Technical Requirements (Derived)` (capabilities, data entities, integrations,
+  non-functional, security, compliance, assumptions) and `## UX Mockups (Derived)`
+  (screen inventory, navigation flow, responsive text wireframes). The output
   remains editable proposal evidence for Backlog Generation Approval.
 
 ### 2. Planning Agent (Plan)
@@ -1014,8 +1020,9 @@ secure technical design.
   repository's `docs/` folder.
 - **Outputs:** solution architecture, data models, API contracts, security
   design, and threat-model documentation committed to the selected repository's
-  `docs/`, with associated work-item updates. The approved design is handed to the
-  Code Generation Agent.
+  `docs/`, with associated work-item updates, plus a `## Technology Stack` table
+  (layer, technology, version or SKU, rationale) that honors the project's selected
+  stack and systems of record. The approved design is handed to the Code Generation Agent.
 
 ### 4. Code Generation Agent (Build)
 
@@ -1294,11 +1301,15 @@ Foundry-Agentic-Workflow-SDLC/
 │     ├─ models/  services/  guards/  shell/  pages/
 ├─ api/                      # FastAPI/Python API
 │  ├─ app/                  # Routes, services, Agent Framework workflow
-│  ├─ tests/                # Python API tests
-│  └─ src/                  # Shared tier config and legacy TS reference
+│  │  ├─ connectors/        # Connector clients + remote.py (routing to connector services)
+│  │  └─ sor_providers.py   # Connector-agnostic systems-of-record provider registry
+│  ├─ connector_services/   # Seven connector micro-services (+ OpenAPI and read-only tool specs)
+│  ├─ tests/                # Python API and connector-service tests
+│  └─ src/                  # Shared JSON tier config
 │     ├─ config/            # API tier config (+ APIM, integrations, guardrails)
 │     ├─ persistence/config # DB tier config
-│     └─ agents/config      # Agent orchestration tier config
+│     └─ agents/config      # Agent orchestration tier config (+ documentAuthoring, connectorTools)
+├─ scripts/connector-services/ # Provision, deploy, wire, and test connector services
 └─ .github/workflows/        # Component-scoped CI/CD (deploy only what changed)
 
 Foundry-Agentic-Workflow-SDLC-Docs/
@@ -1485,7 +1496,7 @@ The canonical project root is
 the Jira key, while issue, test-plan, and test-case links use
 `/browse/{ISSUE_KEY}` without duplicate `browse` segments.
 
-## System of record provisioning & REST wrappers
+## System of record provisioning & connector services
 
 Creating a project in the UI stands up its real homes before the first agent
 runs:
@@ -1598,14 +1609,12 @@ failing the workflow. Transient connector and APIM failures enter the
 persisted retry policy; organization-specific optional ADO fields degrade
 without discarding the work-item state, history, or evidence links.
 
-Every connector is also exposed as a governed REST wrapper under
-`/api/integrations` (`integrations.read` to read, `integrations.write` to
-mutate, audit-logged either way) covering GitHub repos/branches/contents/pull
-requests/issues/Actions, Azure DevOps projects/repos/branches/work items/backlog/
-test plans/Build Definitions/runs, and Bitbucket repositories/branches/contents/
-pull requests. See
-[System-of-record REST wrappers](#system-of-record-rest-wrappers) for the
-endpoint list.
+Connector operations (repositories, branches, contents, pull requests, issues,
+Actions, work items, backlogs, test plans, pipelines, pages, sites, Azure hosting)
+are served by the **connector micro-services**, each with its own Swagger UI,
+API key, audit log, and test script; the factory keeps only connector-agnostic
+status and naming endpoints. See
+[Connector services, factory routing, and agent tools](#connector-services-factory-routing-and-agent-tools).
 
 Each connector is flipped **independently**. Bitbucket remains mock-safe until
 its credential mode and exact OIDC metadata are configured. A provisioning
@@ -1618,9 +1627,11 @@ the matching `*_LIVE=1`), then verify:
 ./scripts/set-connector-secrets.ps1 -Jira -JiraEmail 'account@example.com'
 ./scripts/set-connector-secrets.ps1 -Bitbucket -BitbucketAuthMode AccessToken
 # Or: -BitbucketAuthMode AppPassword -BitbucketUsername 'account-name'
-cd api; .\.venv\Scripts\Activate.ps1
-python scripts/verify_connectors.py --create             # creates a throwaway project in each
+./scripts/connector-services/test-jira-connector.ps1 -ResourceGroup <rg> -ApiAppName <api-app>            # read-only checks
+./scripts/connector-services/test-jira-connector.ps1 -ResourceGroup <rg> -ApiAppName <api-app> -Create -Cleanup  # disposable write test
 ```
+
+Each connector has a matching `test-<connector>-connector.ps1` ([connector setup guides](docs/setup/connectors/README.md)).
 
 Azure DevOps needs **both** `ADO_PAT` and `ADO_LIVE=1` on the API app settings.
 The organization rejects the App Service managed identity, so the PAT is
@@ -1736,29 +1747,32 @@ variables remain available as deployment overlays for older environments.
 Verify credentials end to end before enabling a connector in production:
 
 ```powershell
-cd api; .\.venv\Scripts\Activate.ps1
-python scripts/verify_connectors.py                    # connectivity only
-python scripts/verify_connectors.py --create           # creates a throwaway project
+./scripts/connector-services/test-<connector>-connector.ps1 -ResourceGroup <rg> -ApiAppName <api-app>            # health, Swagger, auth, readiness, live read
+./scripts/connector-services/test-<connector>-connector.ps1 -ResourceGroup <rg> -ApiAppName <api-app> -Create    # plus a disposable write test
 ```
 
 Live mode does not bypass workflow controls. The named human approval
 gate is evaluated by the Agent Framework approval executor before any connector
 receives the request.
 
-### System-of-record REST wrappers
+### Connector services, factory routing, and agent tools
 
-The API exposes each connector under `/api/integrations` so the UI, the agents,
-and operators share one governed code path. Reads need `integrations.read`;
-every mutation needs `integrations.write` and is written to the audit log.
+The factory API no longer carries connector code paths of its own. Three pieces keep it connector-agnostic:
+
+| Piece | What it does |
+| --- | --- |
+| Provider registry (`api/app/sor_providers.py`) | Maps each systems-of-record provider (`sharepoint-docs`, `confluence-docs`, `github-docs`, `jira`, `azure-devops`, `azure-repos`, `bitbucket-pipelines`, …) to its connector and describes each external document store once, so provisioning, publishing, and deletion share one code path. Creating a project's documentation calls SharePoint or Confluence purely from the project setting. |
+| Factory routing (`api/app/connectors/remote.py`) | With `CONNECTOR_SERVICE_URL_<KEY>` / `CONNECTOR_SERVICE_KEY_<KEY>` set on the factory API, every live connector call executes in the matching connector service through `POST /api/v1/rpc`. Mock mode, unconfigured connectors, and pure URL helpers stay local; errors keep type, status, and upstream status. |
+| Read-only agent tools | Each Foundry Prompt Agent gets OpenAPI tools for the GET operations of its connectors (`connectorTools` in `agents.config.json`), authenticated by a Foundry project connection holding the service's GET-only key. Writes stay behind approval gates. |
+
+Factory API endpoints for systems of record:
 
 | Area | Endpoints |
 | --- | --- |
-| Status | `GET /api/integrations/status`, `GET /api/integrations/provisioning/preview?name=` |
+| Status | `GET /api/integrations/status` (mode, `execution` = `connector-service` or `in-process`, live identity), `GET /api/integrations/provisioning/preview?name=` |
 | Project lifecycle | `GET /api/projects/deleted`; `POST /api/projects/{id}/deletion` starts durable cleanup; `GET /api/projects/deletions/{operationId}` polls progress; synchronous `DELETE /api/projects/{id}` remains for compatibility |
 | Project sets | `GET /api/project-sets`, `GET /api/project-sets/{id}`, `POST /api/project-sets/intake`, `POST /api/project-sets/zip/preview`, `POST /api/project-sets/zip` |
-| GitHub | `GET/POST /github/repos`, `GET /github/repos/{repo}`, `GET/POST /github/repos/{repo}/branches`, `GET/PUT /github/repos/{repo}/contents`, `GET/POST /github/repos/{repo}/pulls`, `POST /github/repos/{repo}/issues`, `GET /github/repos/{repo}/workflows`, `POST /github/repos/{repo}/workflows/{workflow}/dispatches` |
-| Azure DevOps | `GET/POST /ado/projects`, `GET /ado/projects/{project}`, `GET/POST /ado/projects/{project}/repos`, `GET/POST /ado/projects/{project}/repos/{repo}/branches`, `GET/POST /ado/projects/{project}/workitems`, `PATCH /ado/projects/{project}/workitems/{id}`, `POST /ado/projects/{project}/backlog`, `POST /ado/projects/{project}/testplans`, `POST /ado/projects/{project}/testcases`, `GET /ado/projects/{project}/pipelines`, `POST /ado/projects/{project}/pipelines/{id}/runs` |
-| Bitbucket | `GET/POST /bitbucket/repos`, `GET /bitbucket/repos/{repo}`, `GET/POST /bitbucket/repos/{repo}/branches`, `GET/POST /bitbucket/repos/{repo}/contents`, `GET/POST /bitbucket/repos/{repo}/pulls` |
+| Connector operations | Served by the connector services at `https://<api-app>-<suffix>.azurewebsites.net/api/v1/...` with Swagger at `/docs` — see the [connector setup guides](docs/setup/connectors/README.md#swagger-urls). |
 
 ## Security & guardrails
 
@@ -1831,8 +1845,8 @@ npm run build
 ```
 
 The validation matrix runs the complete Python suite, Angular ChromeHeadless
-suite and production bundle, plus the legacy TypeScript API Jest suite and
-compiler. Focused coverage includes all three workflow modes, four-option ROI,
+suite and production bundle, and the connector-service contract, routing, and
+read-only tool tests. Focused coverage includes all three workflow modes, four-option ROI,
 all six Jira templates with GitHub/Azure Repos/Bitbucket commit and PR evidence,
 provider-native pipeline identity, project deletion history, and notification
 idempotency.
@@ -1899,7 +1913,7 @@ unrelated newer branch runs cannot satisfy or mask either check.
 | Autonomous Test Acceptance shows queued while CI runs | Generated-code CI is still queued or in progress | No action is required. The workflow polls the existing feature-branch run and resumes automatically after successful CI evidence appears. |
 | Autonomous or Minimal workflow returns to Queued after an upstream error | A transient APIM, Foundry, connector, or external-CI failure entered durable retry/backoff, or the circuit breaker is cooling down | No action is required while it remains Queued. Inspect the project trace and Audit Trail; intervene only if retries exhaust and status becomes Failed. |
 | Agent run returns a `[MOCK ...]` response | No APIM subscription key configured | Expected in demo mode. Set `APIM_SUBSCRIPTION_KEY` to call Foundry via APIM. |
-| `409 ... is in mock mode` from `/api/integrations/**` | Connector still mocked | Set `useMock: false` in `integrations.config.json` or the matching `ADO_LIVE` / `GITHUB_LIVE` / `JIRA_LIVE` / `BITBUCKET_LIVE` env var. |
+| `409 ... is in mock mode` from a connector service `/api/v1/**` | Connector still mocked | Set `useMock: false` in `integrations.config.json` or the matching `ADO_LIVE` / `GITHUB_LIVE` / `JIRA_LIVE` / `BITBUCKET_LIVE` env var. |
 | Azure DevOps entry shows `mocked` while GitHub shows `created` | `ADO_PAT` / `ADO_LIVE` missing on the API; GitHub has its own pair | Run `./scripts/set-connector-secrets.ps1 -AdoPat`, set `ADO_LIVE=1` on the API app settings, then **Retry provisioning**. |
 | Jira entry shows `mocked` | Jira live mode lacks its account email/API-token pair | Run `./scripts/set-connector-secrets.ps1 -Jira -JiraEmail '<Atlassian account email>'`, then **Retry provisioning**. |
 | Bitbucket entry shows `mocked` | Bitbucket remains in safe mock mode or no complete authentication mode is configured | Capture either an access token or username/app-password pair, set `BITBUCKET_WORKSPACE` and `BITBUCKET_LIVE=1`, then **Retry provisioning**. |

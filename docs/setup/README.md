@@ -118,7 +118,7 @@ In **Entra admin center > App registrations > New registration**, create the reg
 | Connector services | Seven additional Linux Python 3.13 web apps `<api-app>-<connector>` on the **API's plan**, one worker each, health check `/health` (see [connector overview](connectors/README.md)). | Size the API plan for eight always-on Python workers: B3 is the baseline; keep **Memory percentage** below 80 %. A B1 plan is not sufficient. |
 | API capacity | **One instance and one application worker** for the current reference design. | Do not horizontally scale before distributed queue/lease coordination is implemented and tested. B3 has no deployment slots; use separate apps or an appropriate higher tier if slots are required. |
 
-The factory's B3 plans are **not** controlled by `azureProvisioning.sku`. That setting applies to generated applications and currently defaults to demonstration-tier `F1`. Do not assume changing it to B3 works: the current generated-plan SKU mapping does not include B3. Review generated hosting separately before production release.
+The factory's B3 plans are **not** controlled by `azureProvisioning.sku`. That setting applies to generated applications and defaults to demonstration-tier `F1`. When a plan cannot be created in that SKU (for example the subscription limit of 10 Free Linux plans per region), the release step tries `azureProvisioning.skuFallbackOrder` from lowest list price upward: `F1` → `B1` → `B2` → `B3` → `P0v3` → `S1` (West US 2, Sep 2026: $0, $12.41, $24.82, $48.91, $56.58, $58.40 per month). Remove entries to cap cost, or set `skuFallbackEnabled: false` to fail instead. Review generated hosting separately before production release.
 
 ### 1e. API Management
 

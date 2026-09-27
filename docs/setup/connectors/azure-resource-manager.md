@@ -35,7 +35,8 @@ Do **not** set `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` or `AZURE_CLIENT_SECRET` on 
 | --- | --- | --- |
 | `azureProvisioning.enabled` / `useMock` | [integrations.config.json](https://github.com/csdmichael/Foundry-Agentic-Workflow-SDLC/blob/main/api/src/config/integrations.config.json) | `true` / `false` |
 | `azureProvisioning.subscriptionId`, `resourceGroup`, `location` | Same | `<generated-app-subscription-id>`, `<generated-app-resource-group>`, `<region>` |
-| `azureProvisioning.sku` | Same | App Service SKU for generated apps (`F1`, `B1`, `S1`, `P0v3`) |
+| `azureProvisioning.sku` | Same | Preferred App Service SKU for generated apps (default `F1`) |
+| `azureProvisioning.skuFallbackOrder` / `skuFallbackEnabled` | Same | SKUs tried in order when the preferred one hits a capacity or quota limit, lowest list price first: `F1`, `B1`, `B2`, `B3`, `P0v3`, `S1`. Non-capacity errors such as 403 are not retried. |
 
 ## Step 1. Choose the Target Resource Group
 
@@ -158,3 +159,4 @@ Set `BITBUCKET_AZURE_CLIENT_ID` / `BITBUCKET_AZURE_TENANT_ID` and exact `azureOi
 | 6d 502 `(401)` from Kudu | Identity lacks Website Contributor on the site | Step 2; wait 5 minutes for RBAC propagation. |
 | 6e `status=failed` | Package/runtime mismatch | Check `https://<site>.scm.azurewebsites.net/api/deployments/latest/log`. |
 | `caller.appId` is not the web app | `AZURE_CLIENT_ID` set | Remove it. |
+| Release fails with `reached the limit of 10 Free Linux app service plan(s)` and `SKUs tried: ...` | Every SKU in `skuFallbackOrder` hit a limit | Delete unused plans in the region or add a paid SKU to `skuFallbackOrder`, then **Retry automation**. |

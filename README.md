@@ -72,26 +72,28 @@ policies** controlling when agents advance to the next stage.
 
 ![Agentic SDLC reference architecture using Microsoft Agent Framework and Microsoft Foundry](docs/HL_Architecture.png)
 
-Agents are **built, run, and governed in Microsoft Foundry**, orchestrated with
-**Microsoft Agent Framework**, and they reach the outside world only by calling
-**Systems of Record through MCP servers and APIs**. Reading the diagram
-top-to-bottom:
+The enterprise architecture separates user experience, workflow orchestration,
+model execution, connector isolation, systems of record, and Azure runtime
+operations. Reading the numbered flow from left to right:
 
-**1 · People (top band).** Six personas hold accountability across the lifecycle —
-Business Stakeholders, Product Owners/Managers, Developers, QA/Testers,
-DevOps/Platform Engineers, and Operations. Every persona maps to a role in the
-app ([Authentication & roles](#authentication--roles)) and to the approver of
-one or more gates.
+**1 · Sign in and submit a project.** Business stakeholders, product owners,
+developers, QA/testers, platform engineers, and operations use the Angular +
+Ionic experience hosted on Azure App Service. Microsoft Entra ID maps each
+person to application roles and approval responsibilities
+([Authentication & roles](#authentication--roles)).
 
-**2 · Microsoft Agent Framework in Foundry (runtime band).** The framework
-supplies built-in orchestration patterns, context & state management, guardrails
-& safety, tools & connectors, and observability & logging. This is why the app
-does not hand-roll an orchestrator — see
-[Agent Framework workflow](#agent-framework-workflow) for the pattern chosen.
+**2 · Orchestrate the workflow.** The FastAPI Factory API authenticates requests,
+provisions projects, enforces approval gates, records audit evidence, and applies
+connector governance. Microsoft Agent Framework owns the ordered multi-agent
+workflow, shared context, checkpoints, and human-in-the-loop pause/resume
+behavior; Cosmos DB SQL API persists workflow state, artifacts, approvals, and
+checkpoints.
 
-**3 · Foundry agents for SDLC (center).** Fourteen ordered Prompt Agents share the
-same deterministic graph while retaining independent run records, model policy,
-evidence, and checkpoints:
+**3 · Invoke agents through APIM.** Azure API Management is the AI gateway for
+policy enforcement, managed-identity authentication, throttling, correlation,
+and model routing. All Microsoft Foundry model calls cross this boundary before
+reaching the fourteen ordered Prompt Agents, which retain independent run
+records, model policy, evidence, and checkpoints:
 
 | Order | Phase | Agent | Produces |
 | --- | --- | --- | --- |
@@ -110,36 +112,44 @@ evidence, and checkpoints:
 | 120 | Improve | Insights Agent | Metrics, thresholds, risks, trends, and prioritized improvement backlog |
 | 130 | Improve | Cost Estimator Agent | Token and USD forecast, per-model cost analysis, and best-cost/best-quality/balanced model matrix |
 
-A **Shared Context & State** bus runs underneath all fourteen so an agent inherits
-what earlier phases produced instead of re-deriving it. In this implementation
-the lifecycle includes an explicit `security` stage before deployment, and the
-agents are fronted by **ten approval gates**, beginning with a cost and time
-estimate review before inference. An agent advances only
-after each prerequisite is explicitly approved by a reviewer or by the selected
-automation policy ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
+A shared workflow context lets each agent inherit approved outputs instead of
+re-deriving them. The lifecycle includes an explicit `security` stage before
+deployment and ten approval gates, beginning with cost and time estimate review
+before inference ([Human-in-the-loop approval gates](#human-in-the-loop-approval-gates)).
 
-**4 · Agents call Systems of Record via MCP servers & APIs (bottom).** Agents
-never own data. Each integration is a governed connector: Azure DevOps, Jira,
-or GitHub Issues for linked work and test records; GitHub, Azure Repos, or
-Bitbucket Cloud for source; the matching GitHub Actions, Azure Pipelines, or
-Bitbucket Pipelines runner for CI/CD; GitHub Copilot as an optional coding
-provider; Microsoft Azure for hosting and monitoring; and Azure Communication
-Services Email for owner lifecycle notifications.
+**4 · Review and approve.** Agent output is proposal-first. The Approval
+Workspace lets authorized owners inspect and edit evidence before the Factory
+API permits an external write. Automated policies may advance a gate only after
+the same server-side prerequisite and evidence checks pass.
 
-Each system of record is served by its own **connector micro-service** (`<api-app>-sharepoint`, `-confluence`, `-jira`, `-ado`, `-github`, `-bitbucket`, `-arm`). The factory API is connector-agnostic: it selects the provider from the project's settings and every live connector call executes in the matching service, which alone holds that connector's credential. Agents get **read-only** OpenAPI tools on the same services; writes happen only after approval. See [Connector services, factory routing, and agent tools](#connector-services-factory-routing-and-agent-tools).
+**5 · Call connector microservices.** The Factory API stays connector-agnostic
+and routes each operation to one of seven isolated services:
+`<api-app>-sharepoint`, `-confluence`, `-jira`, `-ado`, `-github`, `-bitbucket`,
+or `-arm`. Each service alone holds its provider credential and exposes a
+governed REST API and MCP allow-list. See
+[Connector services, factory routing, and agent tools](#connector-services-factory-routing-and-agent-tools).
 
-**5 · Global settings ▸ Project settings (right rail).** The five Systems of
-Record are configured once globally and **pre-populated, overridable per
-project** — implemented exactly as shown in [Systems of Record configuration](#systems-of-record-configuration).
+**6 · Read and write systems of record.** Atlassian connectors cover Confluence
+documentation, Jira work/test records, and Bitbucket source and pull requests.
+Microsoft-side connectors cover SharePoint documentation, Azure DevOps
+work/test records, GitHub source/actions/docs, and Azure Resource Manager
+deployments. Reads can ground proposals; external writes follow the selected
+approval policy.
 
-**6 · Governance & security (right rail, bottom).** RBAC & least privilege, data
-policies & compliance, audit logging & observability, security scanning &
-guardrails, and cost controls. These are cross-cutting, enforced server-side, and
-cannot be bypassed from the UI ([Security & guardrails](#security--guardrails)).
+**7 · Deploy to Azure.** The ARM connector deploys approved applications to App
+Service and related Azure resources through workload identity/OIDC. Managed
+identity removes application client secrets, while Azure Monitor and
+Application Insights provide runtime monitoring.
 
-The outcome band across the bottom — consistency & reuse, end-to-end
-traceability, faster delivery, quality & reliability, visibility & insights, and
-secure & governed operation — is what the approval-gated design is optimizing for.
+**8 · Observe and improve.** Application Insights captures traces, model calls,
+dependencies, and connector activity. That telemetry, together with persisted
+Cosmos DB workflow evidence, feeds operational review and the Insights and Cost
+Estimator agents.
+
+Microsoft Entra ID and the security-and-governance foundation span every tier:
+least-privilege RBAC, Key Vault, private connectivity, policy, audit,
+correlation IDs, and GitHub OIDC are enforced server-side and cannot be bypassed
+from the UI ([Security & guardrails](#security--guardrails)).
 
 This consolidated view implements the **AI Foundry-Based Software Factory**
 reference architecture and the **Agentic SDLC: Human Accountability + Agent

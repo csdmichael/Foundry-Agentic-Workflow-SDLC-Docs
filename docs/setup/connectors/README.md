@@ -81,7 +81,8 @@ flowchart LR
 | Authentication | `X-Connector-Api-Key` header on every call except `GET /health`. |
 | Factory routing | With `CONNECTOR_SERVICE_URL_<KEY>` and `CONNECTOR_SERVICE_KEY_<KEY>` set on the factory API, **every live system-of-record call the factory makes executes in the matching connector service** (see [Factory Routing](#factory-routing)). The factory selects the service from the project's settings, for example SharePoint or Confluence for documentation. |
 | CI/CD | One GitHub Actions workflow per connector: `deploy-connector-<name>.yml`, plus `provision-connector-services.yml` to create the web apps. |
-| Capacity | Seven extra always-on Python workers share the plan's memory. Confirm the plan size (B3 baseline) has headroom: **App Service plan > Monitoring > Memory percentage** should stay below 80 % after all services are running. |
+| Capacity | Seven extra always-on Python workers share the plan's memory. Confirm the plan size (B3 baseline) has headroom: **App Service plan > Monitoring > Memory percentage** should stay below 80 % after all services are running. On B1 (1 core, 1.75 GB) nine apps saturate CPU and memory, and connector calls fail with `504 GatewayTimeout`. If a subscription cost-governance job downscales the plan, exempt the plan or re-apply B3 (`az appservice plan update --sku B3`). |
+| Always On check | A plan created on Free/Shared cannot keep Always On; after scaling up, re-run `New-ConnectorServiceApps.ps1` (idempotent) or verify each app: `az webapp config show -g <rg> -n <app> --query "{alwaysOn:alwaysOn,health:healthCheckPath}"` → `true`, `/health`. The factory API needs Always On too, so its automation queue keeps running while idle. |
 
 ## Factory Routing
 

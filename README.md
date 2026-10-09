@@ -41,6 +41,7 @@ policies** controlling when agents advance to the next stage.
 10. [Agent Framework workflow](#agent-framework-workflow)
 11. [Model selection and routing](#model-selection-and-routing)
 12. [Cost, usage, and model governance](#cost-usage-and-model-governance)
+    - [ACR by Service — monthly Azure resource consumption](#acr-by-service--monthly-azure-resource-consumption)
 13. [Code generation providers](#code-generation-providers)
 14. [Agents in the workflow](#agents-in-the-workflow)
 15. [Features](#features)
@@ -842,6 +843,16 @@ organization-maintained per-million-token planning rates in
 That configuration also holds a quality score used by the recommendation
 matrix. These values support forecasting and portfolio decisions; provider
 invoices and Azure billing exports remain authoritative.
+
+### ACR by Service — monthly Azure resource consumption
+
+See the [ACR by Service README](docs/acr-by-service/README.md) for a monthly
+Azure consumption estimate covering shared factory infrastructure, model
+inference, and retained generated applications. It includes a summary total,
+service-by-service resource quantities and costs, formulas, project-volume
+scenarios, assumptions, optional services, and price-validation references.
+ACR here means **Azure resource consumption**, not Azure Container Registry.
+The illustrative rates are planning inputs, not a verified Azure quote.
 
 ### Orchestration ROI methodology
 

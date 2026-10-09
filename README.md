@@ -846,13 +846,11 @@ invoices and Azure billing exports remain authoritative.
 
 ### ACR by Service — monthly Azure resource consumption
 
-See the [ACR by Service README](docs/acr-by-service/README.md) for a monthly
-Azure consumption estimate covering shared factory infrastructure, model
-inference, and retained generated applications. It includes a summary total,
-service-by-service resource quantities and costs, formulas, project-volume
-scenarios, assumptions, optional services, and price-validation references.
-ACR here means **Azure resource consumption**, not Azure Container Registry.
-The illustrative rates are planning inputs, not a verified Azure quote.
+See the [Azure Consumption by Environment README](docs/acr-by-service/README.md)
+for a simplified monthly Dev, Test, and Prod estimate by Azure service, plus
+the combined total ACR. ACR here means **Azure resource consumption**, not Azure
+Container Registry. The illustrative rates are planning inputs, not a verified
+Azure quote.
 
 ### Orchestration ROI methodology
 
